@@ -1,0 +1,76 @@
+@startuml SimuladorBasicoGeracaoTrajetorias
+
+title "TCC EAUTO FURG 2025 - Aprendizado Social entre Humanos e Agentes Artificiais - Experimento HLH"
+
+' Definição de estilo
+skinparam ParticipantPadding 30
+skinparam MaxMessageSize 180
+
+autonumber
+
+participant Usuário as User
+participant "8 Jogadores Humanos" as JH
+participant "4 Jogadores LLM" as JL
+participant "Internet" as IT
+participant "Sala de Espera" as WR
+participant "Jogo" as G
+participant "Encerrado" as DISM
+
+== Download e Configuração ==
+
+JH -> IT: Download do arquivo .exe
+IT --> JH: Arquivo baixado com sucesso
+JH -> JH: Executam o jogo e configuram o ambiente
+
+== Início do Jogo ==
+
+JH -> WR: Entram na sala de espera
+WR --> JH: Confirmação de entrada no lobby
+
+== Dinâmica do Jogo ==
+
+group Para cada grupo de 4 jogadores 
+    WR -> G: 4 jogadores entram no jogo
+    G --> JH: Aparece a tela com as formas semelhanets as de Tetris
+
+    group Ciclos de fases (3 rodadas)
+        JH -> G: Tentativa de descoberta do objetivo
+        G --> JH: Feedback baseado no score
+        JH -> G: Objetivo cumprido com sucesso
+    end
+
+    G -> DISM: Um jogador do grupo original é dispensado
+    JL -> G: Jogador LLM entra na partida
+end
+
+G -> G : Ciclo encerra após 3 partidas do momento em que todos os jogadores do grupo original sejam substituidos.
+
+
+group Primeiros 4 jogadores 
+    WR -> G: 4 jogadores entram no jogo
+    G --> JH: Aparece a tela com as formas semelhanets as de Tetris
+
+    group Ciclos de fases (3 rodadas)
+        JH -> G: Tentativa de descoberta do objetivo
+        G --> JH: Feedback baseado no score
+        JH -> G: Objetivo cumprido com sucesso
+    end
+
+    G -> DISM: Um jogador do grupo original é dispensado
+    JL -> G: Jogador LLM entra na partida
+end
+
+group Outros 4 jogadores 
+    group Ciclos de fases (3 rodadas)
+        JL -> G: Tentativa de descoberta do objetivo
+        G --> JL: Feedback baseado no score
+        JL -> G: Objetivo cumprido com sucesso
+    end
+
+    G -> DISM: Um jogador LLM do grupo original é dispensado
+    WR -> G: Jogador humano entra na partida
+end
+
+G -> G : Ciclo encerra após 3 partidas do momento em que todos os jogadores do grupo original sejam substituidos.
+
+@enduml

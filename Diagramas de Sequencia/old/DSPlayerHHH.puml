@@ -1,0 +1,50 @@
+@startuml SimuladorBasicoGeracaoTrajetorias
+
+title "TCC EAUTO FURG 2025 - Aprendizado Social entre Humanos e Agentes Artificiais - Experimento HHH"
+
+' Definição de estilo
+skinparam ParticipantPadding 30
+skinparam MaxMessageSize 180
+
+autonumber
+
+' usuario 
+' jogadores ativo
+' jogadores sala de espera
+' jogadores eencerrados
+
+
+participant "12 Jogadores Humanos" as JH
+participant "Internet" as IT
+participant "Sala de Espera" as WR
+participant "Jogo" as G
+participant "Encerrado" as DISM
+
+== Download e Configuração ==
+
+JH -> IT: Download do arquivo .exe
+IT --> JH: Arquivo baixado com sucesso
+JH -> JH: Executam o jogo e configuram o ambiente
+
+== Início do Jogo ==
+
+JH -> WR: Entram na sala de espera
+WR --> JH: Confirmação de entrada no lobby
+
+== Dinâmica do Jogo ==
+
+WR -> G: 4 jogadores entram no jogo
+group Para cada grupo de 4 jogadores
+    G --> JH: Aparece a tela com as formas semelhanets as de Tetris
+
+    group Ciclos de fases (3 rodadas)
+        JH -> G: Tentativa de descoberta do objetivo
+        G --> JH: Feedback baseado no score
+        G -> JH: Objetivo cumprido com sucesso
+    end
+
+    G -> DISM: Um jogador do grupo original é dispensado
+    WR -> G: Novo jogador entra na partida
+end
+
+@enduml

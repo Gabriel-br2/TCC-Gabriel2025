@@ -2,24 +2,27 @@ import pygame
 import pymunk
 
 class generic:
-    def __init__(self, screen, space, color, tam = 20):
-        self.InitPos = (400, 400)
+    def __init__(self, screen, space, color, tam=20, InitPos=(400,400)):
+        self.type = "genericSquare"
+        self.InitPos = InitPos
+        self.screen = screen
         self.color = color
         self.tam = tam
-        self.type = "genericSquare"
-        self.screen = screen
 
         self.body = pymunk.Body(body_type=pymunk.Body.DYNAMIC)
         self.body.position = self.InitPos[0], self.InitPos[1]
 
         self.shape = pymunk.Poly.create_box(self.body, (tam, tam))
 
-        self.shape.mass = 1
         self.shape.elasticity = 1
+        self.shape.mass = 1
 
         space.add(self.body, self.shape)
-
+    
     def draw(self):
+        vertices = self.shape.get_vertices()
 
-        
-        pygame.draw.rect(self.screen, self.color["red"], (self.body.position.x - self.tam//2, self.body.position.y - self.tam//2, self.tam, self.tam))  
+        transformed_vertices = [(v.rotated(self.body.angle) + self.body.position) for v in vertices]
+        polygon_points = [(int(x), int(y)) for x, y in transformed_vertices]
+
+        pygame.draw.polygon(self.screen, self.color, polygon_points)
