@@ -1,7 +1,12 @@
 screen:
   caption: Projeto de TCC - Gabriel
-  height: 600
-  width: 800
+  height: 500
+  width: 500
 
 game:
-  playerNum: 4
+  playerNum: 2
+  objectsNum: 2
+
+server:
+  ip: localhost
+  port: 5555

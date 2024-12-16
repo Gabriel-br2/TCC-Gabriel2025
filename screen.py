@@ -4,6 +4,7 @@ import pymunk.pygame_util
 
 import os
 import sys
+import json
 import shutil
 import base64
 import datetime
@@ -12,7 +13,8 @@ class screen:
     def __init__(self, config, color, clickCallback, debug=False):
         pygame.init()
 
-        self.running       = True
+        self.MenuRunning   = True
+        self.GameRunning   = True
         self.debug         = debug
         self.color         = color
         self.config        = config
@@ -57,33 +59,67 @@ class screen:
         os.remove(f"{file_name}.png")
         return base64_string
 
-    def screen_Loop(self, objects):
+    def screen_LoopGame(self, setNewPosition, getNewPosition, client_socket, objects, id):
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
-                self.running = False
+                self.GameRunning = False
             if event.type == pygame.KEYDOWN:
                 self.clickCallback(event.key)
 
         self.screen.fill(self.color["background"])        
         
-        for gamer in range(self.config["game"]["playerNum"]-2,-2,-1):      
-            self.space[gamer].step(1/self.FPS)
-            
+        for gamer in range(self.config["game"]["playerNum"]):      
+            self.space[gamer].step(1/self.FPS)            
 
-            # ATUALIZAR POSIÇÕES
+            if id != gamer:
+                for obj in objects[f"P{gamer}"][0:]:
+                    obj.draw()
 
-            for obj in objects[f"P{gamer+1}"][gamer == -1:]:
-                obj.draw()
-
-
-
+        update = []
         pos_mouse_mainPlayer = pygame.mouse.get_pos()
-        objects[f"P0"][0].body.position = pos_mouse_mainPlayer
-        objects[f"P0"][0].draw()        
+        objects[f"P{id}"][0].body.position = pos_mouse_mainPlayer
+        objects[f"P{id}"][0].draw()   
+
+        update.append(pos_mouse_mainPlayer)
+
+        for obj in objects[f"P{id}"][1:]:
+            update.append(obj.body.position)
+            obj.draw()
+
+        new_position = update
+        setNewPosition(client_socket, new_position)
+
+        data = getNewPosition(client_socket)
+        
+        for gamer in range(self.config["game"]["playerNum"]):      
+            if id != gamer:
+                for obj in range(len(objects[f"P{gamer}"])-1):
+                    objects[f"P{gamer}"][obj].body.position = data[f"P{gamer}"]["pos"][obj]
 
         pygame.display.flip()
 
         self.clock.tick(self.FPS)
+
+    def screen_MenuLoop(self):
+        for event in pygame.event.get():
+            if (event.type == pygame.QUIT):
+                self.MenuRunning = False
+            if event.type == pygame.KEYDOWN:
+                self.clickCallback(event.key)
+
+        self.screen.fill(self.color["background"])   
+
+
+        
+
+
+
+
+        pygame.display.flip()
+
+        self.clock.tick(self.FPS)
+
+
 
     def close(self):
         pygame.quit()

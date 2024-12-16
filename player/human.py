@@ -21,6 +21,9 @@ class human_Player:
 
         space.add(self.body, self.shape)
 
+    def getPosition(self):
+        return self.body.position
+
     def draw(self):
-        x, y = self.body.position
+        x, y = self.getPosition()
         pygame.draw.circle(self.screen, self.color, (int(x), int(y)), self.tam)

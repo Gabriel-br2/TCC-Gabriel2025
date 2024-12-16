@@ -19,10 +19,11 @@ class generic:
 
         space.add(self.body, self.shape)
     
-    def draw(self):
+    def getPosition(self, shape_recev=None):
         vertices = self.shape.get_vertices()
 
         transformed_vertices = [(v.rotated(self.body.angle) + self.body.position) for v in vertices]
-        polygon_points = [(int(x), int(y)) for x, y in transformed_vertices]
+        return [(int(x), int(y)) for x, y in transformed_vertices]
 
-        pygame.draw.polygon(self.screen, self.color, polygon_points)
+    def draw(self):
+        pygame.draw.polygon(self.screen, self.color, self.getPosition())
