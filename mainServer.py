@@ -17,7 +17,6 @@ server_ip = socket.gethostbyname(server)
 
 try:
     s.bind((server, port))
-
 except socket.error as e:
     print(str(e))
 
@@ -37,14 +36,17 @@ for i in range(cfg.data["game"]["playerNum"]):
 
     Objects[f"P{i}"] = {"id":i, "color": player_Color[i], "pos": objectPosition}
 
+print(Objects)
+
 clients = []
-def broadcast(data, sender_conn=None):
-    for conn in clients:
-        if conn != sender_conn:
-            try:
-                conn.sendall(data)
-            except:
-                clients.remove(conn)
+def broadcast(data, target_conn=None):
+    if target_conn:
+        try:
+            target_conn.sendall(data)
+        except Exception as e:
+            print(f"Erro ao enviar mensagem para o cliente: {e}")
+            if target_conn in clients:
+                clients.remove(target_conn)
 
 def threaded_client(conn, player_id):
     global Objects
@@ -62,8 +64,6 @@ def threaded_client(conn, player_id):
                 data = conn.recv(2048)
                 reply = data.decode('utf-8')
 
-                #print(player_id, reply)
-
                 if not data:
                     conn.send(str.encode("Goodbye"))
                     break
@@ -75,9 +75,7 @@ def threaded_client(conn, player_id):
 
                     message = json.dumps(Objects)
 
-                    print("BBBBBBBBBBBBBBB", message)
-
-                    broadcast(message.encode('utf-8'), sender_conn=conn)
+                    broadcast(message.encode('utf-8'), target_conn=conn)
 
                 except json.JSONDecodeError:
                     print("Erro ao decodificar mensagem do cliente.")
@@ -99,10 +97,14 @@ player_id = 0
 while True:
     conn, addr = s.accept()
     print(f"Conexão estabelecida com {addr}")
-    clients.append(conn)
-
-    start_new_thread(threaded_client, (conn, player_id))
-    player_id += 1
 
     if player_id >= cfg.data["game"]["playerNum"]:
         print("Número máximo de jogadores conectados.")
+        conn.close()
+    
+    else:
+        clients.append(conn)
+        start_new_thread(threaded_client, (conn, player_id))
+        player_id += 1
+
+    

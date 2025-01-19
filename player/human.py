@@ -3,8 +3,8 @@ import pymunk
 import pygame
 
 class human_Player:
-    def __init__(self, screen, space, color, tam = 10):
-        self.InitPos = (random.randint(0,500), random.randint(0,500))
+    def __init__(self, screen, space, color, InitPos, tam = 10):
+        self.InitPos = InitPos
         self.type = "human"
         self.screen = screen
 

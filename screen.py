@@ -4,13 +4,12 @@ import pymunk.pygame_util
 
 import os
 import sys
-import json
 import shutil
 import base64
 import datetime
 
 class screen:
-    def __init__(self, config, color, clickCallback, debug=False):
+    def __init__(self, config, color, clickCallback, ClientId, debug=False):
         pygame.init()
 
         self.MenuRunning   = True
@@ -33,7 +32,7 @@ class screen:
         self.FPS = 60
 
         self.screen = pygame.display.set_mode((self.screen_Width, self.screen_Height))
-        pygame.display.set_caption(config['screen']['caption'])
+        pygame.display.set_caption(config['screen']['caption'] + f" - player: {ClientId}")
 
     def screenshot_Base64(self, save=False, file_path='screenshot/'):
         now = datetime.datetime.now()
@@ -111,8 +110,6 @@ class screen:
 
 
         
-
-
 
 
         pygame.display.flip()

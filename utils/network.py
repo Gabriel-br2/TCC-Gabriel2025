@@ -1,9 +1,9 @@
 import socket
 import json
 
-def client_conn():
-    server_ip = "localhost" 
-    port = 5555
+def client_conn(cfg):
+    server_ip = cfg.data["server"]["ip"] 
+    port = cfg.data["server"]["port"]
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -29,7 +29,6 @@ def setNewPosition(client_socket, new_position):
 
 def getNewPosition(client_socket):
     data = client_socket.recv(2048).decode('utf-8')
-    print("AAAAAAAAAAAAAAAAAAAA",data)
     data = json.loads(data)
     
     print(f"Cliente - Dados recebidos", data)

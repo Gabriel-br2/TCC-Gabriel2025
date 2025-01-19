@@ -18,25 +18,26 @@ def teste(key):
     sc.screenshot_Base64(True)
     print(key)
 
-sc = screen(cfg.data, color.data, teste)
-
 # RECEBER Figuras
-client_socket, id, objects_recev = client_conn()
-print(objects_recev)
+client_socket, ClientId, objects_recev = client_conn(cfg)
+
+sc = screen(cfg.data, color.data, teste, ClientId)
 
 objects = {}
 for i in range(cfg.data["game"]["playerNum"]):
     print(objects_recev[f"P{i}"])
-    objects[f"P{i}"] = [human_Player(sc.screen, sc.space[i], color.data[objects_recev[f"P{i}"]["color"]], 25)]
 
-    for k in objects_recev[f"P{i}"]["pos"]:
+    obj = objects_recev[f"P{i}"]
+    objects[f"P{i}"] = [human_Player(sc.screen, sc.space[i], color.data[obj["color"]], obj["pos"][0] ,25)]
+
+    for k in objects_recev[f"P{i}"]["pos"][1:]:
         x,y = k
         objects[f"P{i}"].append(generic(sc.screen, sc.space[i], color.data[objects_recev[f"P{i}"]["color"]], 50, (x,y)))
 
 def mainGame():
-    global id
+    global ClientId
     while sc.GameRunning:
-        sc.screen_LoopGame(setNewPosition, getNewPosition, client_socket, objects, id)
+        sc.screen_LoopGame(setNewPosition, getNewPosition, client_socket, objects, ClientId)
 
 def mainMenu():
     while sc.MenuRunning:
