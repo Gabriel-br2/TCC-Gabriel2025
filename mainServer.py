@@ -26,13 +26,17 @@ print("Waiting for a connection ...")
 # Generate Objects
 Objects = {}
 player_Color = ["red", "green", "blue", "pink"]
+optionObjects = ["generic"]
+
 for i in range(cfg.data["game"]["playerNum"]):
     objectPosition = []
     for o in range(cfg.data["game"]["objectsNum"] + 1):
         x = random.randint(10,cfg.data["screen"]["width"])
         y = random.randint(10,cfg.data["screen"]["height"])
+        obj = random.choice(optionObjects) if o != 0 else "player"
 
-        objectPosition.append([x,y])
+                             # x, y,rz, type
+        objectPosition.append([x, y, 0, obj])
 
     Objects[f"P{i}"] = {"id":i, "color": player_Color[i], "pos": objectPosition}
 
@@ -90,9 +94,6 @@ def threaded_client(conn, player_id):
         clients.remove(conn)
         conn.close()
 
-    print("Connection Closed")
-    conn.close()
-
 player_id = 0
 while True:
     conn, addr = s.accept()
@@ -101,7 +102,7 @@ while True:
     if player_id >= cfg.data["game"]["playerNum"]:
         print("Número máximo de jogadores conectados.")
         conn.close()
-    
+
     else:
         clients.append(conn)
         start_new_thread(threaded_client, (conn, player_id))

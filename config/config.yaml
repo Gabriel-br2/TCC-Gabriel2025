@@ -5,8 +5,12 @@ screen:
 
 game:
   playerNum: 4
+  playerTam: 10
   objectsNum: 2
+  objectBaseSquareTam: 50
 
 server:
   ip: localhost
   port: 5555
+
+

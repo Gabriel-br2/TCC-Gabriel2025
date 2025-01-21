@@ -21,18 +21,17 @@ def teste(key):
 # RECEBER Figuras
 client_socket, ClientId, objects_recev = client_conn(cfg)
 
-sc = screen(cfg.data, color.data, teste, ClientId)
+sc = screen(cfg.data, color.data, teste, ClientId, objects_recev[f"P{ClientId}"]["color"])
 
 objects = {}
 for i in range(cfg.data["game"]["playerNum"]):
-    print(objects_recev[f"P{i}"])
-
     obj = objects_recev[f"P{i}"]
-    objects[f"P{i}"] = [human_Player(sc.screen, sc.space[i], color.data[obj["color"]], obj["pos"][0] ,25)]
+
+    objects[f"P{i}"] = [human_Player(sc.screen, color.data[obj["color"]], obj["pos"][0][:2] ,cfg.data['game']['playerTam'], sc.space[i])]
 
     for k in objects_recev[f"P{i}"]["pos"][1:]:
-        x,y = k
-        objects[f"P{i}"].append(generic(sc.screen, sc.space[i], color.data[objects_recev[f"P{i}"]["color"]], 50, (x,y)))
+        x,y = k[:2]
+        objects[f"P{i}"].append(generic(sc.screen, color.data[obj["color"]], (x,y), cfg.data['game']['objectBaseSquareTam'], sc.space[i]))
 
 def mainGame():
     global ClientId

@@ -2,8 +2,8 @@ import pygame
 import pymunk
 
 class generic:
-    def __init__(self, screen, space, color, tam=20, InitPos=(400,400)):
-        self.type = "genericSquare"
+    def __init__(self, screen, color, InitPos, tam, space=None):
+        self.type = "generic"
         self.InitPos = InitPos
         self.screen = screen
         self.color = color
@@ -17,13 +17,24 @@ class generic:
         self.shape.elasticity = 1
         self.shape.mass = 1
 
-        space.add(self.body, self.shape)
+        if space is not None:
+           space.add(self.body, self.shape)
     
-    def getPosition(self, shape_recev=None):
+    def getPosition(self, position, angle):
         vertices = self.shape.get_vertices()
 
-        transformed_vertices = [(v.rotated(self.body.angle) + self.body.position) for v in vertices]
+        #print("v", type(vertices[0]), "|", vertices)
+        #print("a", type(self.body.angle), self.body.angle)
+        #print("p", type(self.body.position), self.body.position)
+
+        transformed_vertices = [(v.rotated(angle) + position) for v in vertices]
+        
         return [(int(x), int(y)) for x, y in transformed_vertices]
 
-    def draw(self):
-        pygame.draw.polygon(self.screen, self.color, self.getPosition())
+    def draw(self, position=None, angle=None):
+
+        if angle is None and position is None:
+                position = self.body.position
+                angle = self.body.angle
+
+        pygame.draw.polygon(self.screen, self.color, self.getPosition(position, angle))

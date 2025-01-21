@@ -3,9 +3,9 @@ import pymunk
 import pygame
 
 class human_Player:
-    def __init__(self, screen, space, color, InitPos, tam = 10):
+    def __init__(self, screen, color, InitPos, tam, space=None):
         self.InitPos = InitPos
-        self.type = "human"
+        self.type = "player"
         self.screen = screen
 
         self.tam = tam
@@ -19,11 +19,12 @@ class human_Player:
         self.shape.elasticity = 1
         self.shape.density = 1
 
-        space.add(self.body, self.shape)
+        if space is not None:
+            space.add(self.body, self.shape)
 
-    def getPosition(self):
-        return self.body.position
-
-    def draw(self):
-        x, y = self.getPosition()
+    def draw(self, position=None):
+        if position is None:
+            position = self.body.position
+    
+        x, y = position
         pygame.draw.circle(self.screen, self.color, (int(x), int(y)), self.tam)

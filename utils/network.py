@@ -25,12 +25,12 @@ def setNewPosition(client_socket, new_position):
     update_message = {"pos": new_position}
 
     client_socket.sendall(json.dumps(update_message).encode('utf-8'))
-    print(f"Cliente enviou: {update_message}")
+    #print(f"Cliente enviou: {update_message}")
 
 def getNewPosition(client_socket):
     data = client_socket.recv(2048).decode('utf-8')
     data = json.loads(data)
     
-    print(f"Cliente - Dados recebidos", data)
+    #print(f"Cliente - Dados recebidos", data)
     return data
 

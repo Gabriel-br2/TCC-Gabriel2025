@@ -5,7 +5,7 @@ import pymunk
 class LLM_Player:
     def __init__(self, space, color, tam=25):
         self.InitPos = (100, 100)
-        self.type = "LLM"
+        self.type = "player"
         
         self.tam = tam
         self.color = color

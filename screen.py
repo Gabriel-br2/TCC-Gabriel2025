@@ -9,7 +9,7 @@ import base64
 import datetime
 
 class screen:
-    def __init__(self, config, color, clickCallback, ClientId, debug=False):
+    def __init__(self, config, color, clickCallback, ClientId, Color, debug=False):
         pygame.init()
 
         self.MenuRunning   = True
@@ -32,7 +32,7 @@ class screen:
         self.FPS = 60
 
         self.screen = pygame.display.set_mode((self.screen_Width, self.screen_Height))
-        pygame.display.set_caption(config['screen']['caption'] + f" - player: {ClientId}")
+        pygame.display.set_caption(config['screen']['caption'] + f" - player: {ClientId} - {Color}")
 
     def screenshot_Base64(self, save=False, file_path='screenshot/'):
         now = datetime.datetime.now()
@@ -93,7 +93,7 @@ class screen:
         for gamer in range(self.config["game"]["playerNum"]):      
             if id != gamer:
                 for obj in range(len(objects[f"P{gamer}"])-1):
-                    objects[f"P{gamer}"][obj].body.position = data[f"P{gamer}"]["pos"][obj]
+                    objects[f"P{gamer}"][obj].body.position = data[f"P{gamer}"]["pos"][obj][:2]
 
         pygame.display.flip()
 
