@@ -5,7 +5,7 @@ import pygame
 class human_Player:
     def __init__(self, screen, color, InitPos, tam, space=None):
         self.InitPos = InitPos
-        self.type = "player"
+        self.type = "humanPlayer"
         self.screen = screen
 
         self.tam = tam
@@ -22,9 +22,10 @@ class human_Player:
         if space is not None:
             space.add(self.body, self.shape)
 
-    def draw(self, position=None):
-        if position is None:
+    def draw(self, color=None, position=None, angle=None):
+        if position is None and color is None:
             position = self.body.position
+            color = self.color
     
         x, y = position
-        pygame.draw.circle(self.screen, self.color, (int(x), int(y)), self.tam)
+        pygame.draw.circle(self.screen, color, (int(x), int(y)), self.tam)

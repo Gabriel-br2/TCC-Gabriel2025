@@ -17,24 +17,20 @@ class generic:
         self.shape.elasticity = 1
         self.shape.mass = 1
 
+        self.vertices = self.shape.get_vertices()
+
         if space is not None:
            space.add(self.body, self.shape)
-    
+
     def getPosition(self, position, angle):
-        vertices = self.shape.get_vertices()
-
-        #print("v", type(vertices[0]), "|", vertices)
-        #print("a", type(self.body.angle), self.body.angle)
-        #print("p", type(self.body.position), self.body.position)
-
-        transformed_vertices = [(v.rotated(angle) + position) for v in vertices]
-        
+        transformed_vertices = [(v.rotated(angle) + position) for v in self.vertices]
         return [(int(x), int(y)) for x, y in transformed_vertices]
 
-    def draw(self, position=None, angle=None):
+    def draw(self, color=None, position=None, angle=None):
 
-        if angle is None and position is None:
+        if angle is None and position is None and color is None:
                 position = self.body.position
                 angle = self.body.angle
+                color = self.color
 
-        pygame.draw.polygon(self.screen, self.color, self.getPosition(position, angle))
+        pygame.draw.polygon(self.screen, color, self.getPosition(position, angle))

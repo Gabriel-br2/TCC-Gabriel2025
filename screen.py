@@ -23,12 +23,9 @@ class screen:
         self.screen_Width  = config['screen']['width']
 
         self.clock = pygame.time.Clock()
+        self.space = pymunk.Space()
 
-        self.space = []
-        for gamer in range(config["game"]["playerNum"]):
-            self.space.append(pymunk.Space())
-            self.space[-1].gravity = (0, 0)
-
+        self.space.gravity = (0, 0)
         self.FPS = 60
 
         self.screen = pygame.display.set_mode((self.screen_Width, self.screen_Height))
@@ -66,23 +63,23 @@ class screen:
                 self.clickCallback(event.key)
 
         self.screen.fill(self.color["background"])        
+        self.space.step(1/self.FPS)            
         
+        # Desenhar objetos que não são do cliente principal
         for gamer in range(self.config["game"]["playerNum"]):      
-            self.space[gamer].step(1/self.FPS)            
-
             if id != gamer:
-                for obj in objects[f"P{gamer}"][0:]:
-                    obj.draw()
-
+                for obj in objects["you"][f"P{gamer}"]["pos"]:
+                    objects[obj[3]].draw(self.color[objects["you"][f"P{gamer}"]["color"]], obj[:2], obj[2])
+                    
         update = []
         pos_mouse_mainPlayer = pygame.mouse.get_pos()
-        objects[f"P{id}"][0].body.position = pos_mouse_mainPlayer
-        objects[f"P{id}"][0].draw()   
+        objects[f"me"][0].body.position = pos_mouse_mainPlayer
+        objects[f"me"][0].draw()   
 
-        update.append(pos_mouse_mainPlayer)
+        for obj in objects[f"me"]:
+            x, y = obj.body.position
 
-        for obj in objects[f"P{id}"][1:]:
-            update.append(obj.body.position)
+            update.append([x,y,obj.body.angle, obj.type])
             obj.draw()
 
         new_position = update
@@ -92,8 +89,8 @@ class screen:
         
         for gamer in range(self.config["game"]["playerNum"]):      
             if id != gamer:
-                for obj in range(len(objects[f"P{gamer}"])-1):
-                    objects[f"P{gamer}"][obj].body.position = data[f"P{gamer}"]["pos"][obj][:2]
+                for obj in range(len(objects["you"][f"P{gamer}"]["pos"])):
+                    objects["you"][f"P{gamer}"]["pos"][obj] = data[f"P{gamer}"]["pos"][obj]
 
         pygame.display.flip()
 
