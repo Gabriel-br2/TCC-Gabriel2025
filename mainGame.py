@@ -52,8 +52,9 @@ for i in range(cfg.data['game']['playerNum']):
 
 def mainGame():
     global ClientId
+    iou = objects_recev["IoU"]
     while sc.GameRunning:
-        sc.screen_LoopGame(setNewPosition, getNewPosition, client_socket, objects, ClientId)
+        sc.screen_LoopGame(setNewPosition, getNewPosition, client_socket, objects, ClientId, iou)
 
 def mainMenu():
     while sc.MenuRunning:

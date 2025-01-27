@@ -34,23 +34,23 @@ print("Waiting for a connection ...")
 # Generate Objects
 Objects = {}
 player_Color = ["red", "green", "blue", "pink"]
-optionObjects = ["generic", "teewee"]
 
-
-IoU = 0
 for i in range(cfg.data["game"]["playerNum"]):
+    optionObjects = ["humanPlayer", "generic", "teewee"]
     objectPosition = []
+
     for o in range(cfg.data["game"]["objectsNum"] + 1):
         x = random.randint(10,cfg.data["screen"]["width"])
         y = random.randint(10,cfg.data["screen"]["height"])
         obj = random.choice(optionObjects) if o != 0 else "humanPlayer"
+        optionObjects.remove(obj)
 
                              # x, y,rz, type
         objectPosition.append([x, y, 0, obj])
 
     Objects[f"P{i}"] = {"id":i, "color": player_Color[i], "pos": objectPosition}
 
-Objects["IoU"] = IoU
+Objects["IoU"] = 0
 IoUModels = {"generic": genericModel.vertices, "teewee": teeweeModel.vertices}
 #print("Initial Message: ", Objects)
 
@@ -90,6 +90,11 @@ def threaded_client(conn, player_id):
                     player_key = f"P{player_id}"
                     Objects[player_key]["pos"] = update["pos"]
 
+                    d = reorganizationData(Objects, IoUModels)
+                    iou =  calculate_intersections(d) / calculateUnion(d)
+                    print(f"I:{calculate_intersections(d)} | U:{calculateUnion(d)} | IoU Total: {iou:.2f}")
+                    Objects["IoU"] = iou
+
                     message = json.dumps(Objects)
 
                     broadcast(message.encode('utf-8'), target_conn=conn)
@@ -97,10 +102,6 @@ def threaded_client(conn, player_id):
                 except json.JSONDecodeError:
                     print("Erro ao decodificar mensagem do cliente.")
 
-                #d = reorganizationData(Objects, IoUModels)
-                #iou =  calculateInter(d) / calculateUnion(d)
-                #print(f"I:{calculateInter(d)} | U:{calculateUnion(d)} | IoU Total: {iou:.2f}")
-                
             #except:
             #    break
 

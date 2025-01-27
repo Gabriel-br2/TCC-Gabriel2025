@@ -7,7 +7,7 @@ class teewee:
         self.InitPos = InitPos
         self.screen = screen
         self.color = color
-        self.tam = tam
+        tam = tam/1.25
 
         self.body = pymunk.Body(body_type=pymunk.Body.DYNAMIC)
         self.body.position = self.InitPos[0], self.InitPos[1]
@@ -15,15 +15,15 @@ class teewee:
         vertices1 = [
             (-tam * 1.5, 0),
             (-tam * 1.5, tam),
-            (tam * 1.5, tam),
-            (tam * 1.5, 0),
+            ( tam * 1.5, tam),
+            ( tam * 1.5, 0)
         ]
 
         vertices2 = [
-            (-tam * 0.5, tam),    # Centro esquerdo do "T"
-            (-tam * 0.5, tam * 2),# Topo esquerdo do "T"
-            (tam * 0.5, tam * 2), # Topo do direito "T"
-            (tam * 0.5, tam),     # Centro direito do "T"            
+            (-tam * 0.5, tam),
+            (-tam * 0.5, tam * 2),
+            (tam * 0.5, tam * 2), 
+            (tam * 0.5, tam)          
         ]
 
         self.shape1 = pymunk.Poly(self.body, vertices1)
@@ -56,8 +56,8 @@ class teewee:
 
         v = self.getPosition(position, angle)
 
-        # Função para desenhar os vértices
-        #for vertex in v:
-        #    pygame.draw.circle(self.screen, (255,0,0), vertex, 5)  # Desenha um círculo pequeno em cada vértice
+        # Desenhar os vértices
+        # for vertex in v:
+        #     pygame.draw.circle(self.screen, (255,0,0), vertex, 5)  # Desenha um círculo pequeno em cada vértice
 
         pygame.draw.polygon(self.screen, color, v)

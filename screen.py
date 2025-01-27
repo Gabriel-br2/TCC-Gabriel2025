@@ -28,6 +28,8 @@ class screen:
         self.space.gravity = (0, 0)
         self.FPS = 60
 
+        self.font = pygame.font.SysFont("Arial", 18, bold=True)
+
         self.screen = pygame.display.set_mode((self.screen_Width, self.screen_Height))
         pygame.display.set_caption(config['screen']['caption'] + f" - player: {ClientId} - {Color}")
 
@@ -55,7 +57,7 @@ class screen:
         os.remove(f"{file_name}.png")
         return base64_string
 
-    def screen_LoopGame(self, setNewPosition, getNewPosition, client_socket, objects, id):
+    def screen_LoopGame(self, setNewPosition, getNewPosition, client_socket, objects, id, iou):
         for event in pygame.event.get():
             if (event.type == pygame.QUIT):
                 self.GameRunning = False
@@ -92,6 +94,11 @@ class screen:
                 for obj in range(len(objects["you"][f"P{gamer}"]["pos"])):
                     objects["you"][f"P{gamer}"]["pos"][obj] = data[f"P{gamer}"]["pos"][obj]
 
+        iou = data["IoU"]        
+        texto = self.font.render(f"Objetivo Concluido: {float(iou)*100:.2f} %", True, (0,0,0))
+        texto_rect = texto.get_rect(center=(self.config["screen"]["width"] // 2, 25))
+        self.screen.blit(texto, texto_rect)
+
         pygame.display.flip()
 
         self.clock.tick(self.FPS)
@@ -104,11 +111,6 @@ class screen:
                 self.clickCallback(event.key)
 
         self.screen.fill(self.color["background"])   
-
-
-        
-
-
         pygame.display.flip()
 
         self.clock.tick(self.FPS)
