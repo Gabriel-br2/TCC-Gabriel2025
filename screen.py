@@ -103,20 +103,6 @@ class screen:
 
         self.clock.tick(self.FPS)
 
-    def screen_MenuLoop(self):
-        for event in pygame.event.get():
-            if (event.type == pygame.QUIT):
-                self.MenuRunning = False
-            if event.type == pygame.KEYDOWN:
-                self.clickCallback(event.key)
-
-        self.screen.fill(self.color["background"])   
-        pygame.display.flip()
-
-        self.clock.tick(self.FPS)
-
-
-
     def close(self):
         pygame.quit()
         sys.exit()

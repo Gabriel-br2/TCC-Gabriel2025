@@ -4,11 +4,11 @@ import socket
 from _thread import *
 
 from utils.config import ConfigYaml
-from utils.Iou import *
+from utils.objective import *
 
 from player.human import human_Player
 from objects.generic import generic 
-from objects.teewee import teewee 
+from objects.TShape import teewee 
 
 cfg   = ConfigYaml("config")
 cfg.read_config()
@@ -16,7 +16,7 @@ cfg.read_config()
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 genericModel = generic(None, None, (0,0), cfg.data['game']['objectBaseSquareTam'])
-teeweeModel = teewee(None, None, (0,0), cfg.data['game']['objectBaseSquareTam'])
+teeweeModel  =  teewee(None, None, (0,0), cfg.data['game']['objectBaseSquareTam'])
 
 server = cfg.data["server"]["ip"]
 port = cfg.data["server"]["port"]
@@ -45,14 +45,20 @@ for i in range(cfg.data["game"]["playerNum"]):
         obj = random.choice(optionObjects) if o != 0 else "humanPlayer"
         optionObjects.remove(obj)
 
-                             # x, y,rz, type
-        objectPosition.append([x, y, 0, obj])
+                             # x,  y, rz,  type
+        objectPosition.append([x,  y,  0,  obj])
 
     Objects[f"P{i}"] = {"id":i, "color": player_Color[i], "pos": objectPosition}
 
 Objects["IoU"] = 0
-IoUModels = {"generic": genericModel.vertices, "teewee": teeweeModel.vertices}
-#print("Initial Message: ", Objects)
+
+Models = {"generic": genericModel.vertices, "teewee": teeweeModel.vertices}
+
+
+resultado = [sublista[3] for sublista in Objects["P0"]["pos"][1:]]
+print("resultado:", resultado)
+
+A_goal = calcA_Goal(Models)
 
 clients = []
 def broadcast(data, target_conn=None):
@@ -66,8 +72,8 @@ def broadcast(data, target_conn=None):
 
 def threaded_client(conn, player_id):
     global Objects
-    if True:
-    #try:
+    
+    try:
         initial_message = {
             "objects": Objects,
             "id"     : player_id
@@ -76,8 +82,7 @@ def threaded_client(conn, player_id):
         conn.sendall(json.dumps(initial_message).encode('utf-8'))
 
         while True:
-            #try:
-            if True:
+            try:
                 data = conn.recv(2048)
                 reply = data.decode('utf-8')
 
@@ -90,10 +95,9 @@ def threaded_client(conn, player_id):
                     player_key = f"P{player_id}"
                     Objects[player_key]["pos"] = update["pos"]
 
-                    d = reorganizationData(Objects, IoUModels)
-                    iou =  calculate_intersections(d) / calculateUnion(d)
-                    print(f"I:{calculate_intersections(d)} | U:{calculateUnion(d)} | IoU Total: {iou:.2f}")
-                    Objects["IoU"] = iou
+                    # calc objective
+                    d = reorganizationData(Objects, Models)
+                    Objects["IoU"] = calcPercentage(cfg.data["game"]["playerNum"], A_goal, calcUnion(d))
 
                     message = json.dumps(Objects)
 
@@ -102,15 +106,15 @@ def threaded_client(conn, player_id):
                 except json.JSONDecodeError:
                     print("Erro ao decodificar mensagem do cliente.")
 
-            #except:
-            #    break
+            except:
+                break
 
-    #except Exception as e:
-    #    print(f"Erro com cliente {player_id}: {e}")
-    #finally:
-    #    print(f"Cliente {player_id} desconectado.")
-    #    clients.remove(conn)
-    #    conn.close()
+    except Exception as e:
+        print(f"Erro com cliente {player_id}: {e}")
+    finally:
+        print(f"Cliente {player_id} desconectado.")
+        clients.remove(conn)
+        conn.close()
 
 player_id = 0
 while True:

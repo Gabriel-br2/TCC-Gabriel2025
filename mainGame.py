@@ -4,11 +4,10 @@ from screen import screen
 from utils.config import ConfigYaml
 from utils.network import *
 
-from player.linguisticModel import LLM_Player
 from player.human import human_Player
 
 from objects.generic import generic 
-from objects.teewee import teewee 
+from objects.TShape import teewee 
 
 cfg   = ConfigYaml("config")
 color = ConfigYaml("color")
