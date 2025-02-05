@@ -2,19 +2,18 @@ import random
 import pymunk
 import pygame
 
-class human_Player:
-    def __init__(self, screen, color, InitPos, tam, space=None):
-        self.InitPos = InitPos
-        self.type = "humanPlayer"
+class HumanPlayer:
+    def __init__(self, screen, color, initial_position, size, space=None):
+        self.initial_position = initial_position
+        self.type = "HumanPlayer"
         self.screen = screen
-
-        self.tam = tam
+        self.size = size
         self.color = color
 
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
-        self.body.position = self.InitPos[0], self.InitPos[1]
+        self.body.position = self.initial_position[0], self.initial_position[1]
 
-        self.shape = pymunk.Circle(self.body, tam)
+        self.shape = pymunk.Circle(self.body, size)
         self.shape.collision_type = 3
         self.shape.elasticity = 1
         self.shape.density = 1
@@ -28,4 +27,4 @@ class human_Player:
             color = self.color
     
         x, y = position
-        pygame.draw.circle(self.screen, color, (int(x), int(y)), self.tam)
+        pygame.draw.circle(self.screen, color, (int(x), int(y)), self.size)

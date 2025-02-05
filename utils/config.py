@@ -2,56 +2,65 @@ import os
 import yaml
 from datetime import datetime
 
-class ConfigYaml:
-    def __init__(self, data, path = '~/Documents/class/TCC-Gabriel2025/config'):
-        # Default config File
-        self.path = os.path.expanduser(path)
-        self.dataType = data
-
-        config =   {'screen': {
-                        'height'     : 600,
-                        'width'      : 800,
-                        'caption'    : "Projeto de TCC - Gabriel"
-                        }
-                    }
+class YamlConfig:
+    def __init__(self, config_type, config_dir='~/Documents/class/TCC-Gabriel2025/config'):
+        self.config_dir = os.path.expanduser(config_dir)
+        self.config_type = config_type
         
-        color =    {"background" : [255, 255, 255],
-                        "white"  : [255, 255, 255],
-                        "red"    : [255, 0, 0],
-                        "green"  : [0, 255, 0],
-                        "blue"   : [0, 0, 255]}
-
-        if data == "config": self.data = config
-        elif data == "color": self.data = color
-
+        default_configs = {
+            'config': {
+                'screen': {
+                    'height': 600,
+                    'width': 800,
+                    'caption': "Projeto de TCC - Gabriel"
+                }
+            },
+            'color': {
+                'background': [255, 255, 255],
+                'white': [255, 255, 255],
+                'red': [255, 0, 0],
+                'green': [0, 255, 0],
+                'blue': [0, 0, 255]
+            }
+        }
+        
+        self.data = default_configs.get(config_type, {})
+    
     def read_config(self):
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
-
-        if os.path.isfile(self.path + f'/{self.dataType}.yaml'):
-            with open(self.path + f'/{self.dataType}.yaml','r') as yfile:
-
-                print(self.path + f'/{self.dataType}.yaml')
-                data = yaml.load(yfile, Loader=yaml.loader.SafeLoader)         
-            self.data = data
-
+        if not os.path.exists(self.config_dir):
+            os.makedirs(self.config_dir)
+        
+        config_path = os.path.join(self.config_dir, f'{self.config_type}.yaml')
+        
+        if os.path.isfile(config_path):
+            with open(config_path, 'r') as yaml_file:
+                print(f'Loading config from: {config_path}')
+                self.data = yaml.load(yaml_file, Loader=yaml.SafeLoader)
         else:
-            print(f'No {self.dataType} file. Loading default.')
-            with open(self.path + f'/{self.dataType}.yaml','w') as yfile:
-                yaml.dump(self.data, yfile) 
-
-    def update_config(self):
+            print(f'No existing {self.config_type} file found. Using default settings.')
+            self.save_config()
+    
+    def save_config(self):
+        config_path = os.path.join(self.config_dir, f'{self.config_type}.yaml')
+        with open(config_path, 'w') as yaml_file:
+            yaml.dump(self.data, yaml_file)
+    
+    def backup_and_update_config(self):
         timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        os.rename(self.path + f'/{self.dataType}.yaml',f'config/{self.dataType}_%s.yaml'%timestamp)
-        with open(self.path + f'/{self.dataType}.yaml','w') as yfile:
-            yaml.dump(self.data,yfile)
+        backup_path = os.path.join(self.config_dir, f'{self.config_type}_{timestamp}.yaml')
+        
+        original_path = os.path.join(self.config_dir, f'{self.config_type}.yaml')
+        if os.path.exists(original_path):
+            os.rename(original_path, backup_path)
+        
+        self.save_config()
 
 if __name__ == "__main__":
-    cfg   = ConfigYaml("config")
-    color = ConfigYaml("color")
+    config = YamlConfig("config")
+    color_config = YamlConfig("color")
 
-    cfg.read_config()
-    color.read_config()
+    config.read_config()
+    color_config.read_config()
 
-    print(cfg.data)
-    print(color.data)
+    print(config.data)
+    print(color_config.data)

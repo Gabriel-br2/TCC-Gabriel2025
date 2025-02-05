@@ -1,63 +1,51 @@
-import random
-
-from screen import screen
-from utils.config import ConfigYaml
+from screen import Screen
+from utils.config import YamlConfig
 from utils.network import *
+from player.human import HumanPlayer
+from objects.generic import GenericShape
+from objects.TShape import TeeweeShape 
 
-from player.human import human_Player
-
-from objects.generic import generic 
-from objects.TShape import teewee 
-
-cfg   = ConfigYaml("config")
-color = ConfigYaml("color")
+cfg = YamlConfig("config")
+color = YamlConfig("color")
 
 cfg.read_config()
 color.read_config()
 
-def teste(key):
+def capture_screenshot(key):
     sc.screenshot_Base64(True)
     print(key)
 
-# RECEBER Figuras
-client_socket, ClientId, objects_recev = client_conn(cfg)
-
-sc = screen(cfg.data, color.data, teste, ClientId, objects_recev[f"P{ClientId}"]["color"])
+client_socket, client_id, received_objects = establish_client_connection(cfg)
+sc = Screen(cfg.data, color.data, capture_screenshot, client_id, received_objects[f"P{client_id}"]["color"])
 
 objects = {}
 
-objects["teewee"]      =       teewee(sc.screen, color.data["white"], (0,0), cfg.data['game']['objectBaseSquareTam'])
-objects["generic"]     =      generic(sc.screen, color.data["white"], (0,0), cfg.data['game']['objectBaseSquareTam'])
-objects["humanPlayer"] = human_Player(sc.screen, color.data["white"], (0,0) ,cfg.data['game']['playerTam'])
+objects["teewee"] = TeeweeShape(sc.screen, color.data["white"], (0, 0), cfg.data['game']['objectBaseSquareTam'])
+objects["generic"] = GenericShape(sc.screen, color.data["white"], (0, 0), cfg.data['game']['objectBaseSquareTam'])
+objects["HumanPlayer"] = HumanPlayer(sc.screen, color.data["white"], (0, 0), cfg.data['game']['playerTam'])
 
-obj = objects_recev[f"P{ClientId}"]
-objects[f"me"] = [human_Player(sc.screen, color.data[obj["color"]], obj["pos"][0][:2] ,cfg.data['game']['playerTam'], sc.space)]
+player_obj = received_objects[f"P{client_id}"]
+objects["me"] = [HumanPlayer(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg.data['game']['playerTam'], sc.space)]
 
-for k in objects_recev[f"P{ClientId}"]["pos"][1:]:
-    x,y = k[:2]
-
-    if k[3] == "generic":
-        objects[f"me"].append(generic(sc.screen, color.data[obj["color"]], (x,y), cfg.data['game']['objectBaseSquareTam'], sc.space))
+for position in player_obj["pos"][1:]:
+    x, y = position[:2]
     
-    if k[3] == "teewee":
-        objects[f"me"].append(teewee(sc.screen, color.data[obj["color"]], (x,y), cfg.data['game']['objectBaseSquareTam'], sc.space))
-
+    if position[3] == "generic":
+        objects["me"].append(GenericShape(sc.screen, color.data[player_obj["color"]], (x, y), cfg.data['game']['objectBaseSquareTam'], sc.space))
+    
+    elif position[3] == "teewee":
+        objects["me"].append(TeeweeShape(sc.screen, color.data[player_obj["color"]], (x, y), cfg.data['game']['objectBaseSquareTam'], sc.space))
 
 objects["you"] = {}
 for i in range(cfg.data['game']['playerNum']):
-    if ClientId != i:
-        objects[f"you"][f"P{i}"] = {"color": objects_recev[f"P{i}"]["color"], "pos": objects_recev[f"P{i}"]["pos"]}
+    if client_id != i:
+        objects["you"][f"P{i}"] = {"color": received_objects[f"P{i}"]["color"], "pos": received_objects[f"P{i}"]["pos"]}
 
-
-def mainGame():
-    global ClientId
-    iou = objects_recev["IoU"]
-    while sc.GameRunning:
-        sc.screen_LoopGame(setNewPosition, getNewPosition, client_socket, objects, ClientId, iou)
-
-def mainMenu():
-    while sc.MenuRunning:
-        sc.screen_MenuLoop()
+def start_game():
+    global client_id
+    iou = received_objects["IoU"]
+    while sc.game_running:
+        sc.game_loop(send_new_position, receive_new_position, client_socket, objects, client_id, iou)
 
 if __name__ == "__main__":
-    mainGame()
+    start_game()

@@ -2,50 +2,41 @@ import numpy as np
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
 
-def calcTransform(cx, cy, rz, relacao_vertices):
-    matriz_transformacao = np.array([
-        [np.cos(rz), -np.sin(rz), 0, cx],
-        [np.sin(rz),  np.cos(rz), 0, cy],
-        [         0,           0, 1,  0],
-        [         0,           0, 0,  1]
+def apply_transformation(center_x, center_y, rotation_z, vertex_list):
+    transformation_matrix = np.array([
+        [np.cos(rotation_z), -np.sin(rotation_z), 0, center_x],
+        [np.sin(rotation_z),  np.cos(rotation_z), 0, center_y],
+        [                 0,                   0, 1,         0],
+        [                 0,                   0, 0,         1]
     ])
 
-    vertices_transformados = []
-    for vertice in relacao_vertices:
-        vertice_array = np.array([*vertice, 0, 1])
-        vertice_transformado = np.dot(matriz_transformacao, vertice_array)
-        vertices_transformados.append(tuple(vertice_transformado[:2]))
+    transformed_vertices = []
+    for vertex in vertex_list:
+        vertex_array = np.array([*vertex, 0, 1])
+        transformed_vertex = np.dot(transformation_matrix, vertex_array)
+        transformed_vertices.append(tuple(transformed_vertex[:2]))
     
-    return vertices_transformados
+    return transformed_vertices
 
-def calcA_Goal(Models):
-    A = 0
-    for key, value in Models.items():
-        A += Polygon(value).area
+def calculate_goal_area(models):
+    total_area = sum(Polygon(vertices).area for vertices in models.values())
+    return total_area
 
-    return A
-
-def reorganizationData(data, IoUModelsName):    
+def reorganize_data(data, model_mappings):    
     objects = []
 
     for key, value in data.items():
         if key.startswith('P'):
-            
-            p = []
-            for obj in value['pos'][1:]:
-                p.append(Polygon(calcTransform(*obj[:3], IoUModelsName[obj[3]])))
-            
-            U = unary_union(p)            
-            objects.append(U)
+            polygons = [Polygon(apply_transformation(*obj[:3], model_mappings[obj[3]])) for obj in value['pos'][1:]]
+            unified_polygon = unary_union(polygons)
+            objects.append(unified_polygon)
 
     return objects
 
-def calcUnion(polygons):
+def calculate_union_area(polygons):
     return unary_union(polygons).area
 
-def calcPercentage(n, A_goal, A_Union):
-    progress = ((n * A_goal - A_Union) / ((n-1)*A_goal))
-    print(f"A_goal: {A_goal} | A_Union: {A_Union} | Calc: {progress}")
-
+def calculate_progress(iteration, goal_area, union_area):
+    progress = ((iteration * goal_area - union_area) / ((iteration - 1) * goal_area))
+    print(f"Goal Area: {goal_area} | Union Area: {union_area} | Progress: {progress}")
     return progress
-

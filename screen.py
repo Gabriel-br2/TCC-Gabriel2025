@@ -1,42 +1,41 @@
 import pygame
 import pymunk
 import pymunk.pygame_util
-
 import os
 import sys
 import shutil
 import base64
 import datetime
 
-class screen:
-    def __init__(self, config, color, clickCallback, ClientId, Color, debug=False):
+class Screen:
+    def __init__(self, config, color, click_callback, client_id, player_color, debug=False):
         pygame.init()
 
-        self.MenuRunning   = True
-        self.GameRunning   = True
-        self.debug         = debug
-        self.color         = color
-        self.config        = config
-        self.clickCallback = clickCallback
+        self.menu_running = True
+        self.game_running = True
+        self.debug = debug
+        self.color = color
+        self.config = config
+        self.click_callback = click_callback
 
-        self.screen_Height = config['screen']['height']
-        self.screen_Width  = config['screen']['width']
+        self.screen_height = config['screen']['height']
+        self.screen_width = config['screen']['width']
 
         self.clock = pygame.time.Clock()
         self.space = pymunk.Space()
 
         self.space.gravity = (0, 0)
-        self.FPS = 60
+        self.fps = 60
 
         self.font = pygame.font.SysFont("Arial", 18, bold=True)
 
-        self.screen = pygame.display.set_mode((self.screen_Width, self.screen_Height))
-        pygame.display.set_caption(config['screen']['caption'] + f" - player: {ClientId} - {Color}")
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
+        pygame.display.set_caption(f"{config['screen']['caption']} - player: {client_id} - {player_color}")
 
-    def screenshot_Base64(self, save=False, file_path='screenshot/'):
+    def screenshot_base64(self, save=False, file_path='screenshot/'):
         now = datetime.datetime.now()
-        name = now.strftime("%Y%m%d_%H%M%S")
-        file_name = f"{file_path}{name}"
+        timestamp = now.strftime("%Y%m%d_%H%M%S")
+        file_name = f"{file_path}{timestamp}"
 
         pygame.image.save(self.screen, f"{file_name}.png")
 
@@ -44,64 +43,59 @@ class screen:
             base64_string = base64.b64encode(f.read())
 
         if save:
-            target_dir = f"{file_path}{name}/"
+            target_dir = f"{file_path}{timestamp}/"
             os.makedirs(target_dir)
 
-            destPNG = os.path.join(target_dir, os.path.basename(f"{file_name}.png"))
-            shutil.copy(f"{file_name}.png", destPNG)
+            dest_png = os.path.join(target_dir, os.path.basename(f"{file_name}.png"))
+            shutil.copy(f"{file_name}.png", dest_png)
 
-            destTXT = os.path.join(target_dir, os.path.basename(f"{file_name}.txt"))
-            with open(destTXT, "w") as f:
+            dest_txt = os.path.join(target_dir, os.path.basename(f"{file_name}.txt"))
+            with open(dest_txt, "w") as f:
                 f.write(base64_string.decode("utf-8"))
 
         os.remove(f"{file_name}.png")
         return base64_string
 
-    def screen_LoopGame(self, setNewPosition, getNewPosition, client_socket, objects, id, iou):
+    def game_loop(self, set_new_position, get_new_position, client_socket, objects, player_id, iou):
         for event in pygame.event.get():
-            if (event.type == pygame.QUIT):
-                self.GameRunning = False
+            if event.type == pygame.QUIT:
+                self.game_running = False
             if event.type == pygame.KEYDOWN:
-                self.clickCallback(event.key)
+                self.click_callback(event.key)
 
-        self.screen.fill(self.color["background"])        
-        self.space.step(1/self.FPS)            
-        
-        # Desenhar objetos que não são do cliente principal
-        for gamer in range(self.config["game"]["playerNum"]):      
-            if id != gamer:
-                for obj in objects["you"][f"P{gamer}"]["pos"]:
-                    objects[obj[3]].draw(self.color[objects["you"][f"P{gamer}"]["color"]], obj[:2], obj[2])
-                    
-        update = []
-        pos_mouse_mainPlayer = pygame.mouse.get_pos()
-        objects[f"me"][0].body.position = pos_mouse_mainPlayer
-        objects[f"me"][0].draw()   
+        self.screen.fill(self.color["background"])
+        self.space.step(1 / self.fps)
 
-        for obj in objects[f"me"]:
+        for player_index in range(self.config["game"]["playerNum"]):
+            if player_id != player_index:
+                for obj in objects["you"][f"P{player_index}"]["pos"]:
+                    objects[obj[3]].draw(self.color[objects["you"][f"P{player_index}"]["color"]], obj[:2], obj[2])
+
+        mouse_pos = pygame.mouse.get_pos()
+        objects["me"][0].body.position = mouse_pos
+        objects["me"][0].draw()
+
+        updated_positions = []
+        for obj in objects["me"]:
             x, y = obj.body.position
-
-            update.append([x,y,obj.body.angle, obj.type])
+            updated_positions.append([x, y, obj.body.angle, obj.type])
             obj.draw()
 
-        new_position = update
-        setNewPosition(client_socket, new_position)
+        new_position = updated_positions
+        set_new_position(client_socket, new_position)
 
-        data = getNewPosition(client_socket)
-        
-        for gamer in range(self.config["game"]["playerNum"]):      
-            if id != gamer:
-                for obj in range(len(objects["you"][f"P{gamer}"]["pos"])):
-                    objects["you"][f"P{gamer}"]["pos"][obj] = data[f"P{gamer}"]["pos"][obj]
+        data = get_new_position(client_socket)
+        for player_index in range(self.config["game"]["playerNum"]):
+            if player_id != player_index:
+                objects["you"][f"P{player_index}"]["pos"] = data[f"P{player_index}"]["pos"]
 
-        iou = data["IoU"]        
-        texto = self.font.render(f"Objetivo Concluido: {float(iou)*100:.2f} %", True, (0,0,0))
-        texto_rect = texto.get_rect(center=(self.config["screen"]["width"] // 2, 25))
-        self.screen.blit(texto, texto_rect)
+        iou = data["IoU"]
+        iou_text = self.font.render(f"Objetivo Concluído: {iou * 100:.2f} %", True, (0, 0, 0))
+        text_rect = iou_text.get_rect(center=(self.config["screen"]["width"] // 2, 25))
+        self.screen.blit(iou_text, text_rect)
 
         pygame.display.flip()
-
-        self.clock.tick(self.FPS)
+        self.clock.tick(self.fps)
 
     def close(self):
         pygame.quit()
