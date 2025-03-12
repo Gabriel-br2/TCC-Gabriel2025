@@ -1,6 +1,7 @@
 import pygame
 import pymunk
 import pymunk.pygame_util
+
 import os
 import sys
 import shutil
@@ -81,7 +82,7 @@ class Screen:
         os.remove(f"{file_name}.png")  # Remove original PNG.
         return base64_string  # Return Base64 data.
 
-    def game_loop(self, set_new_position, get_new_position, client_socket, objects, player_id, iou):
+    def game_loop(self, set_new_position, get_new_position, client_socket, objects, player_id, iou, playerType):
         """
         Runs the main game loop.
 
@@ -92,6 +93,7 @@ class Screen:
             objects (dict): Dictionary of game objects.
             player_id (int): The player's ID.
             iou (float): The Intersection over Union (IoU) value.
+            playertype (str): The player is a llm or a human.
 
         Returns:
             None
@@ -111,9 +113,13 @@ class Screen:
                 for obj in objects["you"][f"P{player_index}"]["pos"]:
                     objects[obj[3]].draw(self.color[objects["you"][f"P{player_index}"]["color"]], obj[:2], obj[2])
 
+        if playerType == "human":
+            new_pos = pygame.mouse.get_pos()  # Get mouse position.
 
-        mouse_pos = pygame.mouse.get_pos()  # Get mouse position.
-        objects["me"][0].body.position = mouse_pos  # Set player's position to mouse position.
+        elif playerType == "LLM":
+            new_pos = objects["me"][0].setPosition()
+
+        objects["me"][0].body.position = new_pos  # Set player's position to mouse position.
         objects["me"][0].draw()  # Draw the player.
 
         # Prepare updated position data to send to the server.

@@ -5,7 +5,6 @@ from _thread import start_new_thread
 
 from utils.config import YamlConfig
 from utils.objective import *
-from player.human import HumanPlayer
 from objects.generic import GenericShape
 from objects.TShape import TeeweeShape
 

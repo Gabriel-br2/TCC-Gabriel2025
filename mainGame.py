@@ -1,9 +1,14 @@
 from screen import Screen
 from utils.config import YamlConfig
 from utils.network import *
+
 from player.human import HumanPlayer
+from player.linguisticModel import LLM_Player
+
 from objects.generic import GenericShape
 from objects.TShape import TeeweeShape 
+
+import sys
 
 # Load configuration from YAML file.
 cfg = YamlConfig("config")
@@ -11,6 +16,8 @@ color = YamlConfig("color")
 
 cfg.read_config()
 color.read_config()
+
+playerType = sys.argv[1] if len(sys.argv) > 1 else "human"
 
 def capture_screenshot(key):
     """
@@ -38,10 +45,16 @@ objects = {}
 objects["teewee"] = TeeweeShape(sc.screen, color.data["white"], (0, 0), cfg.data['game']['objectBaseSquareTam'])
 objects["generic"] = GenericShape(sc.screen, color.data["white"], (0, 0), cfg.data['game']['objectBaseSquareTam'])
 objects["HumanPlayer"] = HumanPlayer(sc.screen, color.data["white"], (0, 0), cfg.data['game']['playerTam'])
+objects["llmPlayer"] = LLM_Player(sc.screen, color.data["white"], (0, 0), cfg.data['game']['playerTam'])
 
 # Initialize the player's objects.
 player_obj = received_objects[f"P{client_id}"]
-objects["me"] = [HumanPlayer(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg.data['game']['playerTam'], sc.space)]
+
+if playerType == "human":
+    objects["me"] = [HumanPlayer(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg.data['game']['playerTam'], sc.space)]
+elif playerType == "LLM":
+    objects["me"] = [LLM_Player(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg.data['game']['playerTam'], sc.space)]
+
 
 # Create other objects owned by the player.
 for position in player_obj["pos"][1:]:
@@ -73,7 +86,7 @@ def start_game():
     iou = received_objects["IoU"]  # Get initial IoU from the server
 
     while sc.game_running:
-        sc.game_loop(send_new_position, receive_new_position, client_socket, objects, client_id, iou)  # Run the game loop.
+        sc.game_loop(send_new_position, receive_new_position, client_socket, objects, client_id, iou, playerType)  # Run the game loop.
 
-if __name__ == "__main__":
+if __name__ == "__main__":   
     start_game()  # Start the game.
