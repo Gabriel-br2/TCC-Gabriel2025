@@ -3,17 +3,18 @@ import pygame
 import pymunk
 
 class LLM_Player:
-    def __init__(self, screen, color, initial_position, size, space=None):
+    def __init__(self, screen, color, initial_position, cfg, space=None):
         self.initial_position = initial_position
         self.type = "llmPlayer" 
         self.screen = screen
-        self.size = size
+        self.winsize = (cfg.data['screen']['height'], cfg.data['screen']['width'])
+        self.size = cfg.data['game']['playerTam']
         self.color = color
 
         self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)
         self.body.position = self.initial_position[0], self.initial_position[1]
 
-        self.shape = pymunk.Circle(self.body, size)
+        self.shape = pymunk.Circle(self.body, self.size)
         self.shape.collision_type = 3 
         self.shape.elasticity = 1
         self.shape.density = 1
@@ -30,7 +31,11 @@ class LLM_Player:
             color = self.color
     
         x, y = position
-        pygame.draw.circle(self.screen, color, (int(x), int(y)), self.size)
+        polygon_surface = pygame.Surface(self.winsize, pygame.SRCALPHA)
+        pygame.draw.circle(polygon_surface, color, (int(x), int(y)), self.size)
+        self.screen.blit(polygon_surface, (0, 0))
+
+
 
     def setPosition(self, iterpolation=1):
         if len(self.movingPath) == 0:

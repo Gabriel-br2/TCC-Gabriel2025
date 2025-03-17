@@ -8,7 +8,7 @@ class TeeweeShape:
     This class manages the shape's physical properties (position, rotation, etc.) using Pymunk
     and handles drawing the shape on the screen using Pygame.
     """
-    def __init__(self, screen, color, initial_position, size, space=None):
+    def __init__(self, screen, color, initial_position, cfg, space=None):
         """
         Initializes the TeeweeShape object.
 
@@ -23,7 +23,8 @@ class TeeweeShape:
         self.initial_position = initial_position  
         self.screen = screen 
         self.color = color  
-        self.size = size / 1.25  # Adjust size for visual consistency
+        self.winsize = (cfg.data['screen']['height'], cfg.data['screen']['width'])
+        self.size = cfg.data['game']['objectBaseSquareTam'] / 1.25  # Adjust size for visual consistency
 
         self.body = pymunk.Body(body_type=pymunk.Body.DYNAMIC)  # Dynamic body for physics simulation
         self.body.position = self.initial_position[0], self.initial_position[1]
@@ -89,5 +90,7 @@ class TeeweeShape:
             angle = self.body.angle
             color = self.color
 
+        polygon_surface = pygame.Surface(self.winsize, pygame.SRCALPHA)
         transformed_vertices = self.get_transformed_position(position, angle)
-        pygame.draw.polygon(self.screen, color, transformed_vertices)  # Draw the combined polygon
+        pygame.draw.polygon(polygon_surface, color, transformed_vertices)  # Draw the combined polygon
+        self.screen.blit(polygon_surface, (0, 0))

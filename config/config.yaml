@@ -8,9 +8,8 @@ game:
   playerTam: 10
   objectsNum: 2
   objectBaseSquareTam: 50
+  transparency: 50
 
 server:
   ip: localhost
   port: 5555
-
-

@@ -26,8 +26,8 @@ server_socket.listen(cfg.data["game"]["playerNum"])  # Listen for connections
 print("Waiting for connection...")
 
 # Initialize object models (used for shape definitions).
-generic_model = GenericShape(None, None, (0, 0), cfg.data['game']['objectBaseSquareTam'])
-teewee_model = TeeweeShape(None, None, (0, 0), cfg.data['game']['objectBaseSquareTam'])
+generic_model = GenericShape(None, None, (0, 0), cfg)
+teewee_model = TeeweeShape(None, None, (0, 0), cfg)
 
 # Define player colors.
 player_colors = ["red", "green", "blue", "pink"]

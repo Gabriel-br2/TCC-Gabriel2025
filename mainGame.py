@@ -42,18 +42,18 @@ sc = Screen(cfg.data, color.data, capture_screenshot, client_id, received_object
 objects = {}
 
 # Initialize object models (used for shape definitions).
-objects["teewee"] = TeeweeShape(sc.screen, color.data["white"], (0, 0), cfg.data['game']['objectBaseSquareTam'])
-objects["generic"] = GenericShape(sc.screen, color.data["white"], (0, 0), cfg.data['game']['objectBaseSquareTam'])
-objects["HumanPlayer"] = HumanPlayer(sc.screen, color.data["white"], (0, 0), cfg.data['game']['playerTam'])
-objects["llmPlayer"] = LLM_Player(sc.screen, color.data["white"], (0, 0), cfg.data['game']['playerTam'])
+objects["teewee"] = TeeweeShape(sc.screen, color.data["white"], (0, 0), cfg)
+objects["generic"] = GenericShape(sc.screen, color.data["white"], (0, 0), cfg)
+objects["HumanPlayer"] = HumanPlayer(sc.screen, color.data["white"], (0, 0), cfg)
+objects["llmPlayer"] = LLM_Player(sc.screen, color.data["white"], (0, 0), cfg)
 
 # Initialize the player's objects.
 player_obj = received_objects[f"P{client_id}"]
 
 if playerType == "human":
-    objects["me"] = [HumanPlayer(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg.data['game']['playerTam'], sc.space)]
+    objects["me"] = [HumanPlayer(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg, sc.space)]
 elif playerType == "LLM":
-    objects["me"] = [LLM_Player(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg.data['game']['playerTam'], sc.space)]
+    objects["me"] = [LLM_Player(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg, sc.space)]
 
 
 # Create other objects owned by the player.
@@ -61,10 +61,10 @@ for position in player_obj["pos"][1:]:
     x, y = position[:2]
     
     if position[3] == "generic":
-        objects["me"].append(GenericShape(sc.screen, color.data[player_obj["color"]], (x, y), cfg.data['game']['objectBaseSquareTam'], sc.space))
+        objects["me"].append(GenericShape(sc.screen, color.data[player_obj["color"]], (x, y), cfg, sc.space))
     
     elif position[3] == "teewee":
-        objects["me"].append(TeeweeShape(sc.screen, color.data[player_obj["color"]], (x, y), cfg.data['game']['objectBaseSquareTam'], sc.space))
+        objects["me"].append(TeeweeShape(sc.screen, color.data[player_obj["color"]], (x, y), cfg, sc.space))
 
 # Initialize objects for other players.
 objects["you"] = {}

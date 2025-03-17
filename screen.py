@@ -36,6 +36,8 @@ class Screen:
         self.screen_height = config['screen']['height']  # Screen height from config.
         self.screen_width = config['screen']['width']  # Screen width from config.
 
+        self.transparency = config['game']['transparency']
+
         self.clock = pygame.time.Clock()  # Pygame clock for controlling frame rate.
         self.space = pymunk.Space()  # Create a Pymunk physics space.
 
@@ -111,7 +113,7 @@ class Screen:
         for player_index in range(self.config["game"]["playerNum"]):
             if player_id != player_index:
                 for obj in objects["you"][f"P{player_index}"]["pos"]:
-                    objects[obj[3]].draw(self.color[objects["you"][f"P{player_index}"]["color"]], obj[:2], obj[2])
+                    objects[obj[3]].draw([*self.color[objects["you"][f"P{player_index}"]["color"]],self.transparency], obj[:2], obj[2])
 
         if playerType == "human":
             new_pos = pygame.mouse.get_pos()  # Get mouse position.

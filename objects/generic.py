@@ -8,7 +8,7 @@ class GenericShape:
     This class manages the shape's physical properties (position, rotation, etc.) using Pymunk
     and handles drawing the shape on the screen using Pygame.
     """
-    def __init__(self, screen, color, initial_position, size, space=None):
+    def __init__(self, screen, color, initial_position, cfg, space=None):
         """
         Initializes the GenericShape object.
 
@@ -23,12 +23,13 @@ class GenericShape:
         self.initial_position = initial_position 
         self.screen = screen
         self.color = color
-        self.size = size 
+        self.winsize = (cfg.data['screen']['height'], cfg.data['screen']['width'])
+        self.size = cfg.data['game']['objectBaseSquareTam'] 
 
         self.body = pymunk.Body(body_type=pymunk.Body.DYNAMIC)  # Dynamic body for physics simulation
         self.body.position = self.initial_position[0], self.initial_position[1]
 
-        self.shape = pymunk.Poly.create_box(self.body, (size, size)) # create a box shape
+        self.shape = pymunk.Poly.create_box(self.body, (self.size, self.size)) # create a box shape
 
         self.shape.elasticity = 1  # Elasticity of collisions
         self.shape.mass = 1  # Mass of the shape
@@ -69,4 +70,7 @@ class GenericShape:
             angle = self.body.angle
             color = self.color
 
-        pygame.draw.polygon(self.screen, color, self.get_transformed_position(position, angle)) # draws the polygon
+        polygon_surface = pygame.Surface(self.winsize, pygame.SRCALPHA)
+        transformed_vertices = self.get_transformed_position(position, angle)
+        pygame.draw.polygon(polygon_surface, color, transformed_vertices)  # Draw the combined polygon
+        self.screen.blit(polygon_surface, (0, 0))
