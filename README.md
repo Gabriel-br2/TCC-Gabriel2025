@@ -131,32 +131,6 @@ Adjusting these files allows easy experimentation with game dynamics, user inter
 
 ---
 
-## 🔄 Flowchart
-
-```
-[Start Server] --> [Accept Player Connections]
-                          |
-                 [Start Game Session]
-                          |
-               [Render Game State to Players]
-                          |
-             [Players Observe and Take Actions]
-                          |
-               [System Updates and Feedback]
-                          |
-    [Check IoU Score >= 90%?] -- No --> [Continue]
-                          |
-                          Yes
-                          |
-             [End Game / Replace Player]
-                          |
-             [New Generation Joins Game]
-                          |
-                     [Repeat Cycles]
-```
-
----
-
 ## ❗ Common Errors
 
 | Error              | Cause                   | Solution                                                 |
