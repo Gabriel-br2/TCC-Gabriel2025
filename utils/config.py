@@ -56,7 +56,7 @@ class YamlConfig:
         
         if os.path.isfile(config_path):
             with open(config_path, 'r') as yaml_file:
-                print(f'Loading config from: {config_path}')
+                print(f'Loading from: {config_path}')
                 self.data = yaml.load(yaml_file, Loader=yaml.SafeLoader)
         else:
             print(f'No existing {self.config_type} file found. Using default settings.')

@@ -2,6 +2,5 @@ cffi==1.17.1
 numpy==2.2.3
 pycparser==2.22
 pygame==2.6.1
-pymunk==6.11.1
 PyYAML==6.0.2
 shapely==2.0.7

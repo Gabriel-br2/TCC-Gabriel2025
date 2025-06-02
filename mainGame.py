@@ -1,92 +1,57 @@
 from screen import Screen
+
 from utils.config import YamlConfig
 from utils.network import *
 
-from player.human import HumanPlayer
-from player.linguisticModel import LLM_Player
-
 from objects.generic import GenericShape
-from objects.TShape import TeeweeShape 
+from objects.teewee import TeeweeShape
 
-import sys
-
-# Load configuration from YAML file.
 cfg = YamlConfig("config")
 color = YamlConfig("color")
 
 cfg.read_config()
 color.read_config()
 
-playerType = sys.argv[1] if len(sys.argv) > 1 else "human"
+#def capture_screenshot(key):
+#    sc.screenshot_Base64(True)
+#    print(key)
 
-def capture_screenshot(key):
-    """
-    Captures a screenshot and prints a key (currently unused).
-
-    Args:
-        key: The key pressed (currently unused).
-
-    Returns:
-        None
-    """
-    sc.screenshot_Base64(True)  # Capture screenshot as Base64.
-    print(key)
-
-# Establish connection with the server and receive initial data.
 client_socket, client_id, received_objects = establish_client_connection(cfg)
 
-# Initialize the screen and game environment.
-sc = Screen(cfg.data, color.data, capture_screenshot, client_id, received_objects[f"P{client_id}"]["color"])
+shapeClass = {"generic": GenericShape,
+              "teewee" : TeeweeShape}
 
-# Dictionary to store game objects.
-objects = {}
+sc = Screen(cfg.data, color.data, client_id)
 
-# Initialize object models (used for shape definitions).
-objects["teewee"] = TeeweeShape(sc.screen, color.data["white"], (0, 0), cfg)
-objects["generic"] = GenericShape(sc.screen, color.data["white"], (0, 0), cfg)
-objects["HumanPlayer"] = HumanPlayer(sc.screen, color.data["white"], (0, 0), cfg)
-objects["llmPlayer"] = LLM_Player(sc.screen, color.data["white"], (0, 0), cfg)
+objects = []
+for player, value in received_objects.items():
+    if player == "IoU": continue
 
-# Initialize the player's objects.
-player_obj = received_objects[f"P{client_id}"]
-
-if playerType == "human":
-    objects["me"] = [HumanPlayer(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg, sc.space)]
-elif playerType == "LLM":
-    objects["me"] = [LLM_Player(sc.screen, color.data[player_obj["color"]], player_obj["pos"][0][:2], cfg, sc.space)]
-
-
-# Create other objects owned by the player.
-for position in player_obj["pos"][1:]:
-    x, y = position[:2]
+    transparency = 255 if player == f"P{client_id}" else cfg.data['game']['transparency']
+    color_player = [*color.data[value["color"]], transparency] 
     
-    if position[3] == "generic":
-        objects["me"].append(GenericShape(sc.screen, color.data[player_obj["color"]], (x, y), cfg, sc.space))
-    
-    elif position[3] == "teewee":
-        objects["me"].append(TeeweeShape(sc.screen, color.data[player_obj["color"]], (x, y), cfg, sc.space))
+    count = 0
+    for obj in value["pos"]:
+        objects.append(shapeClass[obj[-1]](cfg, player, count, sc.screen, color_player, obj[:-1]))
+        count +=1
 
-# Initialize objects for other players.
-objects["you"] = {}
-for i in range(cfg.data['game']['playerNum']):
-    if client_id != i:
-        objects["you"][f"P{i}"] = {"color": received_objects[f"P{i}"]["color"], "pos": received_objects[f"P{i}"]["pos"]}
+objects = sorted(objects, key=lambda obj: obj.id == client_id)
 
+
+iou = received_objects["IoU"]
 def start_game():
-    """
-    Starts the main game loop.
-
-    This function initializes the Intersection over Union (IoU) value and runs the game loop
-    until the player quits.
-
-    Returns:
-        None
-    """
     global client_id
-    iou = received_objects["IoU"]  # Get initial IoU from the server
+    global iou
 
     while sc.game_running:
-        sc.game_loop(send_new_position, receive_new_position, client_socket, objects, client_id, iou, playerType)  # Run the game loop.
+        update = sc.game_loop(objects, iou)
+        send_new_position(client_socket, update)
+        
+        received = receive_new_position(client_socket)
+        
+        for o in objects[:-cfg.data['game']['objectsNum']]:
+            o.position = received[f"P{o.id}"]["pos"][o.obj_id][:-1]
+        iou = received["IoU"]
 
 if __name__ == "__main__":   
-    start_game()  # Start the game.
+    start_game()  
