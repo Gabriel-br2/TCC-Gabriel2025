@@ -1,6 +1,7 @@
 import pygame
 import pymunk
 
+
 class GenericShape:
     """
     Represents a generic, dynamic, rectangular shape in the simulation.
@@ -8,6 +9,7 @@ class GenericShape:
     This class manages the shape's physical properties (position, rotation, etc.) using Pymunk
     and handles drawing the shape on the screen using Pygame.
     """
+
     def __init__(self, screen, color, initial_position, cfg, space=None):
         """
         Initializes the GenericShape object.
@@ -20,16 +22,20 @@ class GenericShape:
             space (pymunk.Space, optional): The Pymunk space to add the shape's body and shape to. Defaults to None.
         """
         self.type = "generic"  # Identifies the object type
-        self.initial_position = initial_position 
+        self.initial_position = initial_position
         self.screen = screen
         self.color = color
-        self.winsize = (cfg.data['screen']['height'], cfg.data['screen']['width'])
-        self.size = cfg.data['game']['objectBaseSquareTam'] 
+        self.winsize = (cfg.data["screen"]["height"], cfg.data["screen"]["width"])
+        self.size = cfg.data["game"]["objectBaseSquareTam"]
 
-        self.body = pymunk.Body(body_type=pymunk.Body.DYNAMIC)  # Dynamic body for physics simulation
+        self.body = pymunk.Body(
+            body_type=pymunk.Body.DYNAMIC
+        )  # Dynamic body for physics simulation
         self.body.position = self.initial_position[0], self.initial_position[1]
 
-        self.shape = pymunk.Poly.create_box(self.body, (self.size, self.size)) # create a box shape
+        self.shape = pymunk.Poly.create_box(
+            self.body, (self.size, self.size)
+        )  # create a box shape
 
         self.shape.elasticity = 1  # Elasticity of collisions
         self.shape.mass = 1  # Mass of the shape
@@ -50,8 +56,12 @@ class GenericShape:
         Returns:
             list: A list of tuples, where each tuple represents a transformed vertex (x, y).
         """
-        transformed_vertices = [(vertex.rotated(angle) + position) for vertex in self.vertices]
-        return [(int(x), int(y)) for x, y in transformed_vertices]  # Convert to integers for Pygame
+        transformed_vertices = [
+            (vertex.rotated(angle) + position) for vertex in self.vertices
+        ]
+        return [
+            (int(x), int(y)) for x, y in transformed_vertices
+        ]  # Convert to integers for Pygame
 
     def draw(self, color=None, position=None, angle=None):
         """
@@ -72,5 +82,7 @@ class GenericShape:
 
         polygon_surface = pygame.Surface(self.winsize, pygame.SRCALPHA)
         transformed_vertices = self.get_transformed_position(position, angle)
-        pygame.draw.polygon(polygon_surface, color, transformed_vertices)  # Draw the combined polygon
+        pygame.draw.polygon(
+            polygon_surface, color, transformed_vertices
+        )  # Draw the combined polygon
         self.screen.blit(polygon_surface, (0, 0))

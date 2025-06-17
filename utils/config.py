@@ -1,6 +1,8 @@
 import os
-import yaml
 from datetime import datetime
+
+import yaml
+
 
 class YamlConfig:
     """
@@ -9,7 +11,10 @@ class YamlConfig:
     This class handles reading, saving, and backing up YAML configuration files.
     It supports loading default configurations if a file doesn't exist.
     """
-    def __init__(self, config_type, config_dir='~/Documents/class/TCC-Gabriel2025/config'):
+
+    def __init__(
+        self, config_type, config_dir="~/Documents/class/TCC-Gabriel2025/config"
+    ):
         """
         Initializes the YamlConfig object.
 
@@ -19,26 +24,28 @@ class YamlConfig:
         """
         self.config_dir = os.path.expanduser(config_dir)
         self.config_type = config_type
-        
+
         # Default configurations for different config types.
         default_configs = {
-            'config': {
-                'screen': {
-                    'height': 600,
-                    'width': 800,
-                    'caption': "Projeto de TCC - Gabriel"
+            "config": {
+                "screen": {
+                    "height": 600,
+                    "width": 800,
+                    "caption": "Projeto de TCC - Gabriel",
                 }
             },
-            'color': {
-                'background': [255, 255, 255],
-                'white': [255, 255, 255],
-                'red': [255, 0, 0],
-                'green': [0, 255, 0],
-                'blue': [0, 0, 255]
-            }
+            "color": {
+                "background": [255, 255, 255],
+                "white": [255, 255, 255],
+                "red": [255, 0, 0],
+                "green": [0, 255, 0],
+                "blue": [0, 0, 255],
+            },
         }
-        
-        self.data = default_configs.get(config_type, {}) # Load default config or empty dict if not found
+
+        self.data = default_configs.get(
+            config_type, {}
+        )  # Load default config or empty dict if not found
 
     def read_config(self):
         """
@@ -51,15 +58,15 @@ class YamlConfig:
         """
         if not os.path.exists(self.config_dir):
             os.makedirs(self.config_dir)
-        
-        config_path = os.path.join(self.config_dir, f'{self.config_type}.yaml')
-        
+
+        config_path = os.path.join(self.config_dir, f"{self.config_type}.yaml")
+
         if os.path.isfile(config_path):
-            with open(config_path, 'r') as yaml_file:
-                print(f'Loading from: {config_path}')
+            with open(config_path) as yaml_file:
+                print(f"Loading from: {config_path}")
                 self.data = yaml.load(yaml_file, Loader=yaml.SafeLoader)
         else:
-            print(f'No existing {self.config_type} file found. Using default settings.')
+            print(f"No existing {self.config_type} file found. Using default settings.")
             self.save_config()
 
     def save_config(self):
@@ -69,8 +76,8 @@ class YamlConfig:
         Returns:
             None
         """
-        config_path = os.path.join(self.config_dir, f'{self.config_type}.yaml')
-        with open(config_path, 'w') as yaml_file:
+        config_path = os.path.join(self.config_dir, f"{self.config_type}.yaml")
+        with open(config_path, "w") as yaml_file:
             yaml.dump(self.data, yaml_file)
 
     def backup_and_update_config(self):
@@ -80,14 +87,17 @@ class YamlConfig:
         Returns:
             None
         """
-        timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        backup_path = os.path.join(self.config_dir, f'{self.config_type}_{timestamp}.yaml')
-        
-        original_path = os.path.join(self.config_dir, f'{self.config_type}.yaml')
+        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+        backup_path = os.path.join(
+            self.config_dir, f"{self.config_type}_{timestamp}.yaml"
+        )
+
+        original_path = os.path.join(self.config_dir, f"{self.config_type}.yaml")
         if os.path.exists(original_path):
             os.rename(original_path, backup_path)
-        
+
         self.save_config()
+
 
 if __name__ == "__main__":
     config = YamlConfig("config")

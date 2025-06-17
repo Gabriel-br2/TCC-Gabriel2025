@@ -37,7 +37,7 @@ TCC-Gabriel2025-main/
 │       └── *shape*.py
 ├── players/                  # Players logic
 │   └── human.py
-│   └── linguisticModel.py    
+│   └── linguisticModel.py
 ├── utils/                    # Utility modules
 │   ├── colision.py
 │   ├── config.py
@@ -60,9 +60,9 @@ There are **no dedicated hardware components** in this project. All interactions
 
 ### ✅ Required Dependencies
 
-- Python 3.8+  
-- Pygame  
-- PyYAML  
+- Python 3.8+
+- Pygame
+- PyYAML
 
 All dependencies are listed in the `requirements.txt` file.
 

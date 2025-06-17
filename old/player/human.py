@@ -1,6 +1,8 @@
 import random
-import pymunk
+
 import pygame
+import pymunk
+
 
 class HumanPlayer:
     """
@@ -9,6 +11,7 @@ class HumanPlayer:
     This class manages the player's physical representation (circle), position, and drawing on the screen.
     It uses PyMunk for physics and Pygame for rendering.
     """
+
     def __init__(self, screen, color, initial_position, cfg, space=None):
         """
         Initializes the HumanPlayer object.
@@ -23,17 +26,19 @@ class HumanPlayer:
         self.initial_position = initial_position
         self.type = "HumanPlayer"  # Identifies the object type
         self.screen = screen
-        self.winsize = (cfg.data['screen']['height'], cfg.data['screen']['width'])
-        self.size = cfg.data['game']['playerTam']
+        self.winsize = (cfg.data["screen"]["height"], cfg.data["screen"]["width"])
+        self.size = cfg.data["game"]["playerTam"]
         self.color = color
 
-        self.body = pymunk.Body(body_type=pymunk.Body.KINEMATIC)  # Kinematic body for player control
+        self.body = pymunk.Body(
+            body_type=pymunk.Body.KINEMATIC
+        )  # Kinematic body for player control
         self.body.position = self.initial_position[0], self.initial_position[1]
 
         self.shape = pymunk.Circle(self.body, self.size)  # Circular shape for collision
         self.shape.collision_type = 3  # Collision type identifier
         self.shape.elasticity = 1  # Elasticity of collisions
-        self.shape.density = 1 # density of the player's shape
+        self.shape.density = 1  # density of the player's shape
 
         if space is not None:
             space.add(self.body, self.shape)  # Add to the physics space
@@ -53,10 +58,8 @@ class HumanPlayer:
         if position is None and color is None:
             position = self.body.position
             color = self.color
-    
+
         x, y = position
         polygon_surface = pygame.Surface(self.winsize, pygame.SRCALPHA)
         pygame.draw.circle(polygon_surface, color, (int(x), int(y)), self.size)
         self.screen.blit(polygon_surface, (0, 0))
-
-
