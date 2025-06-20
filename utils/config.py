@@ -12,9 +12,7 @@ class YamlConfig:
     It supports loading default configurations if a file doesn't exist.
     """
 
-    def __init__(
-        self, config_type, config_dir="~/Documents/class/TCC-Gabriel2025/config"
-    ):
+    def __init__(self, config_type, config_dir="config"):
         """
         Initializes the YamlConfig object.
 

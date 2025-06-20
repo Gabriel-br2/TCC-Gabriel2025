@@ -54,5 +54,5 @@ def calculate_progress(iteration, goal_area, union_area):
     elif progress > 100:
         progress = 100
 
-    print(f"Goal Area: {goal_area} | Union Area: {union_area} | Progress: {progress}")
+    # print(f"Goal Area: {goal_area} | Union Area: {union_area} | Progress: {progress}")
     return abs(progress)

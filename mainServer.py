@@ -34,53 +34,64 @@ object_options = [
     for f in os.listdir("objects")
     if os.path.isfile(os.path.join("objects", f))
 ]
-objChoice = random.choices(object_options, k=num_objects)
 
 modelsClass = {
     "generic": GenericShape(cfg).vertices,
     "teewee": TeeweeShape(cfg).vertices,
 }
 
-objects = {}
-for i in range(num_players):
-    object_positions = []
 
-    for o in range(num_objects):
-        for attempt in range(100):
-            x = random.randint(0, screen_width)
-            y = random.randint(0, screen_height)
-            rz = random.choice([p * 90 for p in range(4)])
+def generate_cycle():
+    global modelsClass, num_objects, num_players, screen_width, screen_height
 
-            current_transformed_vertices = apply_transformation(
-                x, y, rz, modelsClass[objChoice[o]]
-            )
-            current_aabb = get_axis_aligned_bounding_box(current_transformed_vertices)
+    objChoice = random.choices(object_options, k=num_objects)
 
-            has_intersection = False
-            for _, _, _, _, other_aabb in object_positions:
-                if aabbs_intersect(current_aabb, other_aabb):
-                    has_intersection = True
+    objects = {}
+    for i in range(num_players):
+        object_positions = []
+
+        for o in range(num_objects):
+            for attempt in range(100):
+                x = random.randint(0, screen_width)
+                y = random.randint(0, screen_height)
+                rz = random.choice([p * 90 for p in range(4)])
+
+                current_transformed_vertices = apply_transformation(
+                    x, y, rz, modelsClass[objChoice[o]]
+                )
+                current_aabb = get_axis_aligned_bounding_box(
+                    current_transformed_vertices
+                )
+
+                has_intersection = False
+                for _, _, _, _, other_aabb in object_positions:
+                    if aabbs_intersect(current_aabb, other_aabb):
+                        has_intersection = True
+                        break
+
+                if not has_intersection:
+                    object_positions.append([x, y, rz, objChoice[o], current_aabb])
+                    placed_successfully = True
                     break
 
-            if not has_intersection:
-                object_positions.append([x, y, rz, objChoice[o], current_aabb])
-                placed_successfully = True
-                break
+        objects[f"P{i}"] = {
+            "id": i,
+            "color": player_colors[i],
+            "pos": [data[:4] for data in object_positions],
+        }
 
-    objects[f"P{i}"] = {
-        "id": i,
-        "color": player_colors[i],
-        "pos": [data[:4] for data in object_positions],
-    }
+    objects["IoU"] = 0
 
-objects["IoU"] = 0
+    models = [modelsClass[o] for o in objChoice]
+    goal_area = calculate_goal_area(models)
 
-models = [modelsClass[o] for o in objChoice]
-goal_area = calculate_goal_area(models)
+    return objects, goal_area
+
 
 clients = []
-
 print("Waiting for connection...")
+
+objects, goal_area = generate_cycle()
 
 
 def broadcast(data, target_conn=None):
@@ -96,8 +107,6 @@ def broadcast(data, target_conn=None):
 
 
 def handle_client_connection(conn, player_id):
-    global objects
-
     try:
         initial_message = {"objects": objects, "id": player_id}
 
