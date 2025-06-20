@@ -8,6 +8,7 @@ def establish_client_connection(config):
     port = config.data["server"]["port"]
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    timeout = 1
 
     while True:
         try:
@@ -20,9 +21,11 @@ def establish_client_connection(config):
                 "Falha ao conectar ao servidor. Certifique-se de que ele está em execução e acessível."
             )
 
-            print("Tentando novamente em 5 segundos...")
-            time.sleep(5)
-            continue
+            print(
+                f"Tentando novamente em {timeout} segundo{'s' if timeout > 1 else ''}..."
+            )
+            time.sleep(timeout)
+            timeout = 5
 
     initial_data = client_socket.recv(2048).decode("utf-8")
     print("Cliente - Dados iniciais recebidos")
