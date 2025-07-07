@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from objects.generic import GenericShape
 from objects.teewee import TeeweeShape
 from screen import Screen

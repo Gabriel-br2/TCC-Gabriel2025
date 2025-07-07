@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import json
 import os
 import random
@@ -91,6 +92,7 @@ def generate_cycle():
 clients = []
 print("Waiting for connection...")
 
+# Generate first cycle
 objects, goal_area = generate_cycle()
 
 
@@ -107,6 +109,8 @@ def broadcast(data, target_conn=None):
 
 
 def handle_client_connection(conn, player_id):
+    global objects, goal_area
+
     try:
         initial_message = {"objects": objects, "id": player_id}
 
@@ -136,6 +140,11 @@ def handle_client_connection(conn, player_id):
 
                 message = json.dumps(objects)
                 broadcast(message.encode("utf-8"), target_conn=conn)
+
+                # print(objects["IoU"])
+
+                if objects["IoU"] > 0.95:
+                    objects, goal_area = generate_cycle()
 
             except json.JSONDecodeError:
                 print("Error decoding client message.")
