@@ -1,4 +1,5 @@
 import math
+import time
 
 import pygame
 
@@ -12,6 +13,7 @@ class Shape:
         self.winsize = (cfg.data["screen"]["width"], cfg.data["screen"]["height"])
         self.vertices = vertices
 
+        self.isMoving = False
         self.isRotating = False
         self.dragging = False
         self.offset_x = 0
@@ -60,3 +62,42 @@ class Shape:
         )
 
         self.screen.blit(polygon_surface, (0, 0))
+
+    def interpolacao_linear(self, posicao_inicial, delta, p):
+        x_inicial, y_inicial = posicao_inicial
+        delta_x, delta_y = delta
+        x_interpolado = x_inicial + (delta_x * p)
+        y_interpolado = y_inicial + (delta_y * p)
+        return (x_interpolado, y_interpolado, 0)
+
+    def moveLinear(self, delta=None, incremento_p=None):
+        if not self.isMoving:
+            self.isMoving = True
+            self.trajetoria = self.gerar_pontos_interpolados(
+                self.position[:-1], delta, incremento_p
+            )
+        else:
+            temp = self.trajetoria.pop(0)
+            self.position[0] = temp[0]
+            self.position[1] = temp[1]
+
+            time.sleep(0.5)
+
+            self.update_position()
+            if len(self.trajetoria) == 0:
+                self.isMoving = False
+
+    def gerar_pontos_interpolados(self, posicao_inicial, delta, incremento_p):
+        trajetoria = []
+        p_atual = 0.0
+
+        while p_atual <= 1.0:
+            ponto = self.interpolacao_linear(posicao_inicial, delta, p_atual)
+            trajetoria.append(ponto)
+            p_atual += incremento_p
+
+        if trajetoria[-1] != self.interpolacao_linear(posicao_inicial, delta, 1.0):
+            ponto_final = self.interpolacao_linear(posicao_inicial, delta, 1.0)
+            trajetoria.append(ponto_final)
+
+        return trajetoria

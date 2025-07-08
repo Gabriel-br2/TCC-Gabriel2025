@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+import json
+import sys
+
+from api import LLMApi
 from objects.generic import GenericShape
 from objects.teewee import TeeweeShape
 from screen import Screen
@@ -11,15 +15,19 @@ color = YamlConfig("color")
 cfg.read_config()
 color.read_config()
 
-# def capture_screenshot(key):
-#    sc.screenshot_Base64(True)
-#    print(key)
+if len(sys.argv) > 1 and sys.argv[1] == "LLM":
+    api = LLMApi("https://openrouter.ai/api/v1", model="google/gemma-3n-e4b-it:free")
+    api.setInitialContext(
+        "You are a game agent that is playing a game of shape matching. You are given a list of shapes and you need to match them to the best of your ability. You are given a list of shapes and you need to match them to the best of your ability. Use the move commands to move the shapes."
+    )
+
+else:
+    api = None
 
 client_socket, client_id, received_objects = establish_client_connection(cfg)
 
 shapeClass = {"generic": GenericShape, "teewee": TeeweeShape}
-
-sc = Screen(cfg.data, color.data, client_id)
+sc = Screen(cfg.data, color.data, client_id, api)
 
 objects = []
 for player, value in received_objects.items():
@@ -39,8 +47,6 @@ for player, value in received_objects.items():
         count += 1
 
 objects = sorted(objects, key=lambda obj: obj.id == client_id)
-
-
 iou = received_objects["IoU"]
 
 
@@ -53,7 +59,6 @@ def start_game():
         send_new_position(client_socket, update)
 
         received = receive_new_position(client_socket)
-
         for o in objects[: -cfg.data["game"]["objectsNum"]]:
             o.position = received[f"P{o.id}"]["pos"][o.obj_id][:-1]
         iou = received["IoU"]
