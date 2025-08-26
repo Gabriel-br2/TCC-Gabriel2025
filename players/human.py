@@ -1,10 +1,8 @@
 import pygame
-
 from utils.colision import *
 
 
 def humanInteraction(event, objects, my_objects):
-
     if event.type == pygame.MOUSEBUTTONDOWN:
         for my_obj in reversed(my_objects):
             if point_in_polygon(event.pos, my_obj.transformed_vertices):

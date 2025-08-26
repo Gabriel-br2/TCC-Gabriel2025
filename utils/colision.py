@@ -4,7 +4,6 @@ from shapely.geometry import Polygon
 
 
 def detect_polygon_intersection(poly1_points, poly2_points):
-
     poly1 = Polygon(poly1_points)
     poly2 = Polygon(poly2_points)
 
