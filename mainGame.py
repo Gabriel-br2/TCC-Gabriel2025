@@ -10,10 +10,15 @@ from utils.network import receive_new_position
 from utils.network import send_new_position
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--player", type=str, help="Choose model player")
-args = parser.parse_args()
+parser.add_argument(
+    "--player",
+    type=str,
+    choices=["human", "LLM"],
+    required=True,
+    help="Choose model player",
+)
 
-# args.player
+args = parser.parse_args()
 
 # --- Configs ---
 cfg = YamlConfig("config")
