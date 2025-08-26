@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import argparse
+
 from objects.generic import GenericShape
 from objects.teewee import TeeweeShape
 from screen import Screen
@@ -6,6 +8,12 @@ from utils.config import YamlConfig
 from utils.network import establish_client_connection
 from utils.network import receive_new_position
 from utils.network import send_new_position
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--player", type=str, help="Choose model player")
+args = parser.parse_args()
+
+# args.player
 
 # --- Configs ---
 cfg = YamlConfig("config")
@@ -18,11 +26,11 @@ client_socket, client_id, received_objects = establish_client_connection(cfg)
 
 # --- Start form ---
 shape_classes = {"generic": GenericShape, "teewee": TeeweeShape}
-screen = Screen(cfg.data, color.data, client_id)
+
+screen = Screen(cfg.data, color.data, client_id, args.player)
 
 
 def initialize_objects(received_objects):
-    """Cria as formas de cada jogador a partir dos objetos recebidos do servidor."""
     shapes = []
     for player, value in received_objects.items():
         if player == "IoU":

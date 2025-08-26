@@ -5,12 +5,14 @@ import pygame
 
 class Shape:
     def __init__(self, screen, color, initial_position, cfg, vertices, shape_type):
-        self.type = shape_type
-        self.screen = screen
+
         self.color = color
-        self.position = initial_position
-        self.winsize = (cfg.data["screen"]["width"], cfg.data["screen"]["height"])
+        self.screen = screen
+        self.type = shape_type
         self.vertices = vertices
+        self.position = initial_position
+        self.alpha = ["A", "B", "C", "D"]
+        self.winsize = (cfg.data["screen"]["width"], cfg.data["screen"]["height"])
 
         self.isRotating = False
         self.dragging = False
@@ -44,6 +46,24 @@ class Shape:
         self.transformed_vertices = self.get_transformed_position(
             self.position[:-1], self.position[-1]
         )
+
+    def draw_label(self, player_id):
+        font = pygame.font.SysFont(None, 18)
+        text_surface = font.render(
+            f"{player_id}.{self.alpha[self.obj_id]}", True, (0, 0, 0)
+        )  # preto
+
+        xs = [v[0] for v in self.transformed_vertices]
+        ys = [v[1] for v in self.transformed_vertices]
+        center_x = sum(xs) // len(xs)
+        center_y = sum(ys) // len(ys)
+
+        text_rect = text_surface.get_rect(center=(center_x, center_y))
+
+        self.screen.blit(text_surface, text_rect)
+
+    def clear_label(self):
+        self.draw()
 
     def draw(self):
         if self.isRotating:

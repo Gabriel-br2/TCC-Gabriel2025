@@ -1,14 +1,18 @@
+import os
+
 import pygame
 from players.human import humanInteraction
+from players.LLM import LLMInteraction
 
 
 class Screen:
-    def __init__(self, config, color, client_id):
+    def __init__(self, config, color, client_id, player_type):
         pygame.init()
 
         self.config = config
         self.color = color
         self.client_id = client_id
+        self.player_type = player_type
 
         self.fps = 60
         self.menu_running = True
@@ -39,11 +43,28 @@ class Screen:
 
     # --- Input ---
     def _handle_events(self, objects, local_objects):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.game_running = False
-                return
-            humanInteraction(event, objects, local_objects)
+        if self.player_type == "human":
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.game_running = False
+                    return
+                humanInteraction(event, objects, local_objects)
+
+        if self.player_type == "LLM":
+            if not os.path.exists("screendata"):
+                os.makedirs("screendata")
+
+            for obj in local_objects + objects:
+                obj.draw_label(obj.id)
+            pygame.image.save(self.screen, "screendata/last.jpg")
+            for obj in local_objects + objects:
+                obj.clear_label()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.game_running = False
+                    return
+            LLMInteraction(objects, local_objects)
 
     # --- Renderização ---
     def _render(self, objects, iou):
