@@ -1,4 +1,5 @@
 import json
+import re
 
 import ollama
 
@@ -24,7 +25,12 @@ def obtain_image_description(path):
         messages=[{"role": "user", "content": f"{prompt}", "images": [f"./{path}"]}],
     )
 
-    return json.loads(res["message"]["content"])
+    asw = res["message"]["content"]
+    asw = asw.replace("```json", "")
+    asw = asw.replace("```", "")
+
+    print("llava:", asw)
+    return json.loads(asw)
 
 
 def get_command_movement(image_interpretation):
@@ -32,8 +38,8 @@ def get_command_movement(image_interpretation):
     Generates concrete actions based on the JSON.
 
     Example output:
-    [{'action': 'move', 'object_id': 0, 'dx': 10, 'dy': -5},
-    {'action': 'rotate', 'object_id': 0}]
+    in case of a movement action: {'action': 'move', 'object_id': 0, 'dx': 10, 'dy': -5},
+    in case of a rotation action: {'action': 'rotate', 'object_id': 0}
 
     respond only with this json and nothing else
 
@@ -50,4 +56,10 @@ def get_command_movement(image_interpretation):
         ],
     )
 
-    return json.loads(res["message"]["content"])
+    asw = res["message"]["content"]
+    asw = asw.replace("```json", "")
+    asw = asw.replace("```", "")
+    cleaned = re.sub(r"<think>.*?</think>", "", asw, flags=re.DOTALL)
+
+    print("qwen:", cleaned.strip())
+    return json.loads(cleaned.strip())

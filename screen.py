@@ -33,8 +33,8 @@ class Screen:
     def game_loop(self, objects, iou):
         local_player_objects = objects[-self.config["game"]["objectsNum"] :]
 
-        self._handle_events(objects, local_player_objects)
         self._render(objects, iou)
+        self._handle_events(objects, local_player_objects)
 
         self.clock.tick(self.fps)
 
