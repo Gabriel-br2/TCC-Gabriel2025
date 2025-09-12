@@ -1,12 +1,13 @@
 import os
+import threading
 
 import pygame
 from players.human import humanInteraction
-from players.LLM import LLMInteraction
+from players.LLM import LLM_PLAYER
 
 
 class Screen:
-    def __init__(self, config, color, client_id, player_type):
+    def __init__(self, config, color, client_id, player_type, LLM_source="ollama"):
         pygame.init()
 
         self.config = config
@@ -14,7 +15,11 @@ class Screen:
         self.client_id = client_id
         self.player_type = player_type
 
+        if player_type == "LLM":
+            self.LLM = LLM_PLAYER(LLM_source)
+
         self.fps = 60
+        self.lock = True
         self.menu_running = True
         self.game_running = True
 
@@ -43,28 +48,38 @@ class Screen:
 
     # --- Input ---
     def _handle_events(self, objects, local_objects):
-        if self.player_type == "human":
+        def human_events():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.game_running = False
                     return
                 humanInteraction(event, objects, local_objects)
 
-        if self.player_type == "LLM":
+        def LLM_events():
             if not os.path.exists("screendata"):
                 os.makedirs("screendata")
 
-            for obj in local_objects + objects:
-                obj.draw_label(obj.id)
+            for obj in local_objects + objects: obj.draw_label(obj.id)
             pygame.image.save(self.screen, "screendata/last.jpg")
-            for obj in local_objects + objects:
-                obj.clear_label()
+            for obj in local_objects + objects: obj.clear_label()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.game_running = False
                     return
-            LLMInteraction(objects, local_objects)
+            self.LLM.LLMInteraction(objects, local_objects)
+            self.lock = True
+
+        if self.player_type == "human":
+            human_events()
+            
+
+        if self.player_type == "LLM":
+            if self.lock:
+                self.lock = False            
+                thread1 = threading.Thread(target=LLM_events)
+                thread1.start()
+            
 
     # --- Renderização ---
     def _render(self, objects, iou):
