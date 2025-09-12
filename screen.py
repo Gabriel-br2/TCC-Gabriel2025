@@ -7,7 +7,7 @@ from players.LLM import LLM_PLAYER
 
 
 class Screen:
-    def __init__(self, config, color, client_id, player_type, LLM_source="ollama"):
+    def __init__(self, config, color, client_id, player_type, LLM_source="local"):
         pygame.init()
 
         self.config = config

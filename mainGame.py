@@ -15,8 +15,23 @@ parser.add_argument(
     type=str,
     choices=["human", "LLM"],
     required=True,
-    help="Choose model player",
+    help="Choose the type of player",
 )
+
+parser.add_argument(
+    "--source",
+    type=str,
+    choices=["api", "local"],
+    help="LLM source (required if --player=LLM)",
+)
+
+args = parser.parse_args()
+
+if args.player == "LLM" and not args.source:
+    parser.error("The --source argument is required when --player is LLM.")
+
+if args.player == "human" and args.source:
+    parser.error("The --source argument is not valid when --player is human.")
 
 args = parser.parse_args()
 

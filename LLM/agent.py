@@ -1,8 +1,11 @@
 from LLM.source.LLM_base import Base_Agent
 
 class Agent_Thinker(Base_Agent):
-    def __init__(self, llm_source="ollama"):
-        super().__init__(agent_name="THINKER", llm_source=llm_source, model="llava")
+    def __init__(self, llm_source="local"):
+        
+        super().__init__(agent_name="THINKER", 
+                         llm_source=llm_source,
+                         model="llava")
 
     def _set_initial_context(self):
         self.context = """Analyze the provided image and generate a JSON with the following fields:
@@ -27,8 +30,11 @@ class Agent_Thinker(Base_Agent):
 # --------------------------------------------------------------------------------------------
 
 class Agent_Player(Base_Agent):
-    def __init__(self, llm_source="ollama"):
-        super().__init__(agent_name="PLAYER", llm_source=llm_source, model="qwen:14b")
+    def __init__(self, llm_source="local"):
+        
+        super().__init__(agent_name="PLAYER", 
+                         llm_source=llm_source,
+                         model="qwen:14b")
 
     def _set_initial_context(self):
         self.context = """Your task is to analyze the user's Game interpretation and generate a SINGLE JSON object representing ONE action.

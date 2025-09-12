@@ -9,7 +9,7 @@ from players.motion import *
 from utils.colision import *
 
 class LLM_PLAYER:
-    def __init__(self, source="ollama"):
+    def __init__(self, source="local"):
         self.source = source
 
         self.Thinker = Agent_Thinker(source)

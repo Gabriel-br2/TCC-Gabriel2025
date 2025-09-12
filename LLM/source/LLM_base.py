@@ -5,7 +5,7 @@ from LLM.source.api import OPENROUNTER_API
 from LLM.source.local import OLLAMA_APP
 
 class Base_Agent:
-    def __init__(self, agent_name: str, llm_source: str = "ollama", model: str = None):
+    def __init__(self, agent_name: str, llm_source: str = "local", model: str = None):
         self.name = agent_name
         self.payload = None
         self.context = ""
