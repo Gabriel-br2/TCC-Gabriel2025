@@ -94,7 +94,6 @@ def broadcast(data, target_conn=None):
             if target_conn in clients:
                 clients.remove(target_conn)
 
-
 def handle_server_calc():
     global objects, goal_area
     while True:
@@ -104,7 +103,6 @@ def handle_server_calc():
                 num_players, goal_area, calculate_union_area(reorganized)
             )
             objects["IoU"] = progress
-            broadcast(json.dumps(objects).encode("utf-8"))
         time.sleep(0.25)
 
 

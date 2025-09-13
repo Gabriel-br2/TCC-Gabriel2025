@@ -41,4 +41,8 @@ def send_new_position(client_socket, new_position):
 
 def receive_new_position(client_socket):
     data = client_socket.recv(2048).decode("utf-8")
-    return json.loads(data)
+    try:
+        return json.loads(data)
+    except json.JSONDecodeError:
+        print("Erro ao decodificar os dados recebidos do servidor.")
+        print(f"Dados recebidos: {data}")
