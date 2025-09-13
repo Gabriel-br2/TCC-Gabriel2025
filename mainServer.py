@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import socket
+import time
 from _thread import start_new_thread
 
 from objects.generic import GenericShape
@@ -94,6 +95,19 @@ def broadcast(data, target_conn=None):
                 clients.remove(target_conn)
 
 
+def handle_server_calc():
+    global objects, goal_area
+    while True:
+        if len(clients) == num_players:
+            reorganized = reorganize_data(objects, modelsClass)
+            progress = calculate_progress(
+                num_players, goal_area, calculate_union_area(reorganized)
+            )
+            objects["IoU"] = progress
+            broadcast(json.dumps(objects).encode("utf-8"))
+        time.sleep(0.25)
+
+
 def handle_client_connection(conn, player_id):
     global objects, goal_area
     try:
@@ -107,15 +121,8 @@ def handle_client_connection(conn, player_id):
                 update = json.loads(data.decode("utf-8"))
                 player_key = f"P{player_id}"
                 objects[player_key]["pos"] = update["pos"]
-                reorganized = reorganize_data(objects, modelsClass)
-                progress = calculate_progress(
-                    num_players, goal_area, calculate_union_area(reorganized)
-                )
-                objects["IoU"] = progress
-
                 broadcast(json.dumps(objects).encode("utf-8"), target_conn=conn)
-                if objects["IoU"] > 0.95:
-                    objects, goal_area = generate_cycle()
+                
             except json.JSONDecodeError:
                 logging.warning("Invalid JSON from client.")
     except Exception as e:
@@ -132,13 +139,18 @@ if __name__ == "__main__":
     logging.info("Server started. Waiting for connections...")
     objects, goal_area = generate_cycle()
     player_id = 0
+
+    start_new_thread(handle_server_calc, ())
+
     while True:
         conn, addr = server_socket.accept()
         logging.info(f"Connection established with {addr}")
-        if player_id >= num_players:
-            logging.warning("Max players reached, rejecting connection.")
-            conn.close()
-            continue
+
         clients.append(conn)
         start_new_thread(handle_client_connection, (conn, player_id))
         player_id += 1
+
+        #if player_id == num_players:
+        #    logging.warning("Max players reached, rejecting connection.")
+        #    break
+        
