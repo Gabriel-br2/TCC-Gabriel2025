@@ -49,10 +49,10 @@ modelsClass = {
 
 clients = []
 objects, goal_area = {}, None
+cycle_id = 0
 data_lock = Lock()
 
 
-# --- aux Function ---
 def place_object(obj_type, existing_positions, max_attempts=100):
     model_vertices = modelsClass[obj_type]
     for _ in range(max_attempts):
@@ -68,7 +68,10 @@ def place_object(obj_type, existing_positions, max_attempts=100):
 
 
 def generate_cycle():
-    logging.info("Generating a new cycle...")
+    global cycle_id
+    cycle_id += 1
+    logging.info(f"Generating a new cycle... (ID: {cycle_id})")
+
     chosen_objects = random.choices(object_options, k=num_objects)
     new_objects = {}
     for pid in range(num_players):
@@ -83,19 +86,19 @@ def generate_cycle():
             "pos": [p[:4] for p in positions],
         }
     new_objects["IoU"] = 0
+    new_objects["cycle_id"] = cycle_id
     new_goal_area = calculate_goal_area([modelsClass[o] for o in chosen_objects])
     return new_objects, new_goal_area
 
 
-def broadcast(data):
+def broadcast(data, client_list):
     disconnected_clients = []
-    with data_lock:
-        for client_conn in clients:
-            try:
-                client_conn.sendall(data)
-            except Exception as e:
-                logging.error(f"Error broadcasting to a client: {e}")
-                disconnected_clients.append(client_conn)
+    for client_conn in client_list:
+        try:
+            client_conn.sendall(data)
+        except Exception as e:
+            logging.error(f"Error broadcasting to a client: {e}")
+            disconnected_clients.append(client_conn)
 
     if disconnected_clients:
         with data_lock:
@@ -108,8 +111,11 @@ def handle_server_calc():
     global objects, goal_area
     while True:
         if len(clients) == num_players:
-            reset_cycle = False
+            data_to_send = None
+            client_list_copy = []
+
             with data_lock:
+                reset_cycle = False
                 reorganized = reorganize_data(objects, modelsClass)
                 union_area = calculate_union_area(reorganized)
                 progress = calculate_progress(num_players, goal_area, union_area)
@@ -122,18 +128,23 @@ def handle_server_calc():
                     objects, goal_area = generate_cycle()
                     reset_cycle = True
 
-            data_to_send = {"objects": objects, "reset": reset_cycle}
-            broadcast(json.dumps(data_to_send).encode("utf-8"))
+                data_to_send = json.dumps(
+                    {"objects": objects, "reset": reset_cycle}
+                ).encode("utf-8")
+                client_list_copy = clients[:]
+
+            if data_to_send and client_list_copy:
+                broadcast(data_to_send, client_list_copy)
 
         time.sleep(0.25)
 
 
 def handle_client_connection(conn, player_id):
-    """Handles an individual client's connection, receiving their updates."""
-    global objects
+    global objects, cycle_id
     try:
-        initial_data = {"objects": objects, "id": player_id, "reset": False}
-        conn.sendall(json.dumps(initial_data).encode("utf-8"))
+        with data_lock:
+            initial_data = {"objects": objects, "id": player_id, "reset": False}
+            conn.sendall(json.dumps(initial_data).encode("utf-8"))
 
         while True:
             data = conn.recv(2048)
@@ -144,10 +155,14 @@ def handle_client_connection(conn, player_id):
                 update = json.loads(data.decode("utf-8"))
                 player_key = f"P{player_id}"
 
-                with data_lock:
-                    if player_key in objects:
-                        objects[player_key]["pos"] = update["pos"]
+                update_cycle_id = update.get("cycle_id")
 
+                with data_lock:
+                    if update_cycle_id == cycle_id:
+                        if player_key in objects:
+                            objects[player_key]["pos"] = update["pos"]
+                    else:
+                        pass
             except json.JSONDecodeError:
                 pass
 

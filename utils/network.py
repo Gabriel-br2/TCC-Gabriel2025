@@ -34,8 +34,8 @@ def establish_client_connection(config):
     return client_socket, data["id"], data
 
 
-def send_new_position(client_socket, new_position):
-    update_message = {"pos": new_position}
+def send_new_position(client_socket, new_position, current_cycle_id):
+    update_message = {"pos": new_position, "cycle_id": current_cycle_id}
     client_socket.sendall(json.dumps(update_message).encode("utf-8"))
 
 
