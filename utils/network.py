@@ -44,9 +44,5 @@ def receive_new_position(client_socket):
     try:
         return json.loads(data)
     except json.JSONDecodeError:
-        if not data:
-            print("Conexão com o servidor perdida.")
-            return None
         print("Erro ao decodificar os dados recebidos do servidor.")
-        print(f"Dados recebidos: {data}")
-        return None
+        return json.loads("}".join(a.split("}")[:4]) + "}")

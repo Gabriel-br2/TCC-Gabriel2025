@@ -70,7 +70,7 @@ class Screen:
             self.screen.fill(self.color["background"])
             end_font = pygame.font.SysFont("Arial", self.width // 20, bold=True)
             end_text = end_font.render(
-                "Objetivo concluído! Obrigado por jogar!", True, (0, 0, 0)
+                "Experimento concluído! Obrigado por jogar!", True, (0, 0, 0)
             )
             end_rect = end_text.get_rect(center=(self.width / 2, self.height / 2))
             self.screen.blit(end_text, end_rect)

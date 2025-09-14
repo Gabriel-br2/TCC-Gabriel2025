@@ -80,6 +80,7 @@ def generate_cycle():
     new_objects["IoU"] = 0
     new_objects["cycle_id"] = cycle_id
     new_goal_area = calculate_goal_area([modelsClass[o] for o in chosen_objects])
+
     return new_objects, new_goal_area
 
 

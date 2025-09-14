@@ -64,6 +64,7 @@ def initialize_objects(objects_data):
             255 if player == f"P{client_id}" else cfg.data["game"]["transparency"]
         )
         player_color = [*color.data[value["color"]], transparency]
+
         for count, obj in enumerate(value["pos"]):
             shapes.append(
                 shape_classes[obj[-1]](
