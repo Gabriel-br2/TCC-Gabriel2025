@@ -3,10 +3,9 @@ import argparse
 import threading
 import time
 
-from objects.generic import GenericShape
-from objects.teewee import TeeweeShape
 from screen import Screen
 from utils.config import YamlConfig
+from utils.dinamic_import import plugins_import
 from utils.network import establish_client_connection
 from utils.network import receive_new_position
 from utils.network import send_new_position
@@ -49,8 +48,8 @@ client_socket, client_id, initial_data = establish_client_connection(cfg)
 received_objects = initial_data["objects"]
 
 current_cycle_id = received_objects.get("cycle_id", 0)
+shape_classes = plugins_import("objects")
 
-shape_classes = {"generic": GenericShape, "teewee": TeeweeShape}
 screen = Screen(cfg.data, color.data, client_id, args.player)
 
 

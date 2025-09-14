@@ -8,10 +8,9 @@ import time
 from _thread import start_new_thread
 from threading import Lock
 
-from objects.generic import GenericShape
-from objects.teewee import TeeweeShape
 from utils.colision import *
 from utils.config import YamlConfig
+from utils.dinamic_import import plugins_import
 from utils.objective import *
 
 # --- Config ---
@@ -36,16 +35,9 @@ server_socket.bind((server_ip, server_port))
 server_socket.listen(num_players)
 
 # --- Object ---
-object_options = [
-    f.split(".")[0]
-    for f in os.listdir("objects")
-    if os.path.isfile(os.path.join("objects", f))
-]
-
-modelsClass = {
-    "generic": GenericShape(cfg).vertices,
-    "teewee": TeeweeShape(cfg).vertices,
-}
+object_import = plugins_import("objects")
+object_options = list(object_import.keys())
+modelsClass = {key: item(cfg).vertices for key, item in object_import.items()}
 
 clients = []
 objects, goal_area = {}, None
