@@ -4,7 +4,7 @@ screen:
   width: 500
 
 game:
-  playerNum: 2
+  playerNum: 4
   playerTam: 10
   objectsNum: 2
   objectBaseSquareTam: 50

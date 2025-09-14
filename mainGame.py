@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
+
 import argparse
+import threading 
+import time      
 
 from objects.generic import GenericShape
 from objects.teewee import TeeweeShape
@@ -9,6 +12,11 @@ from utils.network import establish_client_connection
 from utils.network import receive_new_position
 from utils.network import send_new_position
 
+
+latest_server_state = {}
+state_lock = threading.Lock()
+game_is_running = True
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--player",
@@ -17,80 +25,98 @@ parser.add_argument(
     required=True,
     help="Choose the type of player",
 )
-
 parser.add_argument(
     "--source",
     type=str,
     choices=["api", "local"],
     help="LLM source (required if --player=LLM)",
 )
-
 args = parser.parse_args()
-
 if args.player == "LLM" and not args.source:
     parser.error("The --source argument is required when --player is LLM.")
-
 if args.player == "human" and args.source:
     parser.error("The --source argument is not valid when --player is human.")
 
-args = parser.parse_args()
-
-# --- Configs ---
 cfg = YamlConfig("config")
 color = YamlConfig("color")
 cfg.read_config()
 color.read_config()
 
-# --- server Con ---
-client_socket, client_id, received_objects = establish_client_connection(cfg)
+client_socket, client_id, initial_data = establish_client_connection(cfg)
+received_objects = initial_data["objects"]
 
-# --- Start form ---
 shape_classes = {"generic": GenericShape, "teewee": TeeweeShape}
-
 screen = Screen(cfg.data, color.data, client_id, args.player)
 
-
-def initialize_objects(received_objects):
+def initialize_objects(objects_data):
     shapes = []
-    for player, value in received_objects.items():
+    for player, value in objects_data.items():
         if player == "IoU":
             continue
-
-        transparency = (
-            255 if player == f"P{client_id}" else cfg.data["game"]["transparency"]
-        )
+        transparency = 255 if player == f"P{client_id}" else cfg.data["game"]["transparency"]
         player_color = [*color.data[value["color"]], transparency]
-
         for count, obj in enumerate(value["pos"]):
             shapes.append(
                 shape_classes[obj[-1]](
-                    cfg, player, count, screen.screen, player_color, obj[:-1]
+                    cfg, int(player[1:]), count, screen.screen, player_color, obj[:-1]
                 )
             )
+    return sorted(shapes, key=lambda s: (s.id != client_id, s.id, s.obj_id))
 
-    return sorted(shapes, key=lambda obj: obj.id == client_id)
+def network_listener(sock):
+    global latest_server_state, game_is_running
+    while game_is_running:
+        server_update = receive_new_position(sock)
+        if server_update is None:
+            print("Conexão com o servidor perdida. Encerrando o jogo.")
+            game_is_running = False
+            break
+        
+        with state_lock:
+            latest_server_state = server_update
 
-
-# --- Start State ---
 shapes = initialize_objects(received_objects)
-iou = received_objects["IoU"]
+iou = received_objects.get("IoU", 0)
 
-
-# --- Main loop ---
 def start_game():
-    global iou
+    global iou, shapes, latest_server_state, game_is_running
 
-    while screen.game_running:
-        update = screen.game_loop(shapes, iou)
-        send_new_position(client_socket, update)
+    listener_thread = threading.Thread(target=network_listener, args=(client_socket,), daemon=True)
+    listener_thread.start()
 
-        received = receive_new_position(client_socket)
-        for shape in shapes[: -cfg.data["game"]["objectsNum"]]:
-            shape.position = received[f"P{shape.id}"]["pos"][shape.obj_id][:-1]
+    while screen.game_running and game_is_running:
+        update_payload = screen.game_loop(shapes, iou)
+        
+        send_new_position(client_socket, update_payload)
 
-        iou = received["IoU"]
+        current_update = None
+        with state_lock:
+            if latest_server_state: # Verifica se a thread de rede recebeu algo novo
+                current_update = latest_server_state
+                latest_server_state = {} # Limpa para não processar a mesma mensagem duas vezes
 
+        if current_update:
+            is_reset = current_update.get("reset", False)
+            server_objects = current_update.get("objects", {})
 
-# --- Main Entrance ---
+            if is_reset:
+                print("🚀 New cycle started! Re-initializing objects.")
+                shapes = initialize_objects(server_objects)
+            else:
+                for shape in shapes:
+                    if shape.id != client_id:
+                        player_key = f"P{shape.id}"
+                        if player_key in server_objects:
+                            try:
+                                new_pos = server_objects[player_key]["pos"][shape.obj_id]
+                                shape.position = new_pos[:-1]
+                            except (KeyError, IndexError):
+                                pass 
+
+            iou = server_objects.get("IoU", iou)
+        
+    game_is_running = False
+    screen.close()
+
 if __name__ == "__main__":
     start_game()

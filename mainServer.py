@@ -6,6 +6,7 @@ import random
 import socket
 import time
 from _thread import start_new_thread
+from threading import Lock 
 
 from objects.generic import GenericShape
 from objects.teewee import TeeweeShape
@@ -48,11 +49,10 @@ modelsClass = {
 
 clients = []
 objects, goal_area = {}, None
-
+data_lock = Lock() 
 
 # --- aux Function ---
 def place_object(obj_type, existing_positions, max_attempts=100):
-    """Tenta posicionar um objeto sem colisão dentro da tela."""
     model_vertices = modelsClass[obj_type]
     for _ in range(max_attempts):
         x, y = random.randint(0, screen_width), random.randint(0, screen_height)
@@ -65,51 +65,72 @@ def place_object(obj_type, existing_positions, max_attempts=100):
             return [x, y, rotation, obj_type, aabb]
     return None
 
-
 def generate_cycle():
+    logging.info("Generating a new cycle...")
     chosen_objects = random.choices(object_options, k=num_objects)
-    objects = {}
+    new_objects = {}
     for pid in range(num_players):
         positions = []
         for obj in chosen_objects:
             placed = place_object(obj, positions)
             if placed:
                 positions.append(placed)
-        objects[f"P{pid}"] = {
+        new_objects[f"P{pid}"] = {
             "id": pid,
             "color": player_colors[pid],
             "pos": [p[:4] for p in positions],
         }
-    objects["IoU"] = 0
-    goal_area = calculate_goal_area([modelsClass[o] for o in chosen_objects])
-    return objects, goal_area
+    new_objects["IoU"] = 0
+    new_goal_area = calculate_goal_area([modelsClass[o] for o in chosen_objects])
+    return new_objects, new_goal_area
 
 
-def broadcast(data, target_conn=None):
-    if target_conn:
-        try:
-            target_conn.sendall(data)
-        except Exception as e:
-            logging.error(f"Error sending to client: {e}")
-            if target_conn in clients:
-                clients.remove(target_conn)
+def broadcast(data):
+    disconnected_clients = []
+    with data_lock:
+        for client_conn in clients:
+            try:
+                client_conn.sendall(data)
+            except Exception as e:
+                logging.error(f"Error broadcasting to a client: {e}")
+                disconnected_clients.append(client_conn)
+
+    if disconnected_clients:
+        with data_lock:
+            for client in disconnected_clients:
+                if client in clients:
+                    clients.remove(client)
+
 
 def handle_server_calc():
     global objects, goal_area
     while True:
         if len(clients) == num_players:
-            reorganized = reorganize_data(objects, modelsClass)
-            progress = calculate_progress(
-                num_players, goal_area, calculate_union_area(reorganized)
-            )
-            objects["IoU"] = progress
+            reset_cycle = False
+            with data_lock:
+                reorganized = reorganize_data(objects, modelsClass)
+                union_area = calculate_union_area(reorganized)
+                progress = calculate_progress(num_players, goal_area, union_area)
+                objects["IoU"] = progress
+
+                if progress >= 0.95:
+                    logging.info(f"Objective reached with {progress:.2f}%! Resetting cycle.")
+                    objects, goal_area = generate_cycle()
+                    reset_cycle = True
+        
+            data_to_send = {"objects": objects, "reset": reset_cycle}
+            broadcast(json.dumps(data_to_send).encode("utf-8"))
+
         time.sleep(0.25)
 
 
 def handle_client_connection(conn, player_id):
-    global objects, goal_area
+    """Handles an individual client's connection, receiving their updates."""
+    global objects
     try:
-        conn.sendall(json.dumps({"objects": objects, "id": player_id}).encode("utf-8"))
+        initial_data = {"objects": objects, "id": player_id, "reset": False}
+        conn.sendall(json.dumps(initial_data).encode("utf-8"))
+        
         while True:
             data = conn.recv(2048)
             if not data:
@@ -118,37 +139,41 @@ def handle_client_connection(conn, player_id):
             try:
                 update = json.loads(data.decode("utf-8"))
                 player_key = f"P{player_id}"
-                objects[player_key]["pos"] = update["pos"]
-                broadcast(json.dumps(objects).encode("utf-8"), target_conn=conn)
+                
+                with data_lock:
+                    if player_key in objects:
+                        objects[player_key]["pos"] = update["pos"]
                 
             except json.JSONDecodeError:
-                logging.warning("Invalid JSON from client.")
+                pass
+                
     except Exception as e:
         logging.error(f"Client {player_id} error: {e}")
     finally:
         logging.info(f"Client {player_id} disconnected.")
-        if conn in clients:
-            clients.remove(conn)
+        with data_lock:
+            if conn in clients:
+                clients.remove(conn)
         conn.close()
 
 
 # --- main Loop ---
 if __name__ == "__main__":
-    logging.info("Server started. Waiting for connections...")
     objects, goal_area = generate_cycle()
     player_id = 0
 
     start_new_thread(handle_server_calc, ())
 
-    while True:
+    logging.info("Server started. Waiting for connections...")
+    while player_id < num_players:
         conn, addr = server_socket.accept()
         logging.info(f"Connection established with {addr}")
 
-        clients.append(conn)
+        with data_lock:
+            clients.append(conn)
         start_new_thread(handle_client_connection, (conn, player_id))
         player_id += 1
 
-        #if player_id == num_players:
-        #    logging.warning("Max players reached, rejecting connection.")
-        #    break
-        
+    logging.warning("Max players reached. No longer accepting connections.")
+    while True:
+        time.sleep(60)

@@ -36,7 +36,8 @@ class Screen:
 
     # --- Loop principal ---
     def game_loop(self, objects, iou):
-        local_player_objects = objects[-self.config["game"]["objectsNum"] :]
+        # <<< MUDANÇA: Seleciona os objetos do jogador local pelo ID, não pela posição na lista.
+        local_player_objects = [obj for obj in objects if obj.id == self.client_id]
 
         self._render(objects, iou)
         self._handle_events(objects, local_player_objects)
