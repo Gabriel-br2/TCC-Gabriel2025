@@ -22,5 +22,4 @@ def plugins_import(dir_plugins):
             except ImportError as e:
                 print(f"Error importing module {module_name}: {e}")
 
-    print(imported_plugins)
     return imported_plugins

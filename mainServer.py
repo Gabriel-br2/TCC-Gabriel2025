@@ -19,7 +19,10 @@ logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 cfg = YamlConfig("config")
 cfg.read_config()
 
-player_colors = ["red", "green", "blue", "pink"]
+color = YamlConfig("color")
+color.read_config()
+
+player_colors = list(color.data.keys())[1:]
 
 num_objects = cfg.data["game"]["objectsNum"]
 num_players = cfg.data["game"]["playerNum"]
