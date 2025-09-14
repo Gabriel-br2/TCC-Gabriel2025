@@ -140,6 +140,7 @@ def start_game():
             iou = server_objects.get("IoU", iou)
 
     game_is_running = False
+    screen.end_screen()
     screen.close()
 
 

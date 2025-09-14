@@ -48,11 +48,7 @@ class Screen:
         return [[*obj.position, obj.type] for obj in local_player_objects]
 
     def change_screen(self):
-        # self.width x self.height
-
-        a = self.width // 20
-
-        large_font = pygame.font.SysFont("Arial", a, bold=True)
+        large_font = pygame.font.SysFont("Arial", self.width // 20, bold=True)
         text_surface = large_font.render(
             "Objetivo concluído, iniciando próximo ciclo", True, (0, 0, 0)  # Cor preta
         )
@@ -63,6 +59,23 @@ class Screen:
         self.screen.blit(text_surface, text_rect)
         pygame.display.flip()
         pygame.time.wait(3000)
+
+    def end_screen(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.close()
+                    return
+
+            self.screen.fill(self.color["background"])
+            end_font = pygame.font.SysFont("Arial", self.width // 20, bold=True)
+            end_text = end_font.render(
+                "Objetivo concluído! Obrigado por jogar!", True, (0, 0, 0)
+            )
+            end_rect = end_text.get_rect(center=(self.width / 2, self.height / 2))
+            self.screen.blit(end_text, end_rect)
+            pygame.display.flip()
+            self.clock.tick(self.fps)
 
     # --- Input ---
     def _handle_events(self, objects, local_objects):
