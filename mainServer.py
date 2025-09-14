@@ -6,7 +6,7 @@ import random
 import socket
 import time
 from _thread import start_new_thread
-from threading import Lock 
+from threading import Lock
 
 from objects.generic import GenericShape
 from objects.teewee import TeeweeShape
@@ -49,7 +49,8 @@ modelsClass = {
 
 clients = []
 objects, goal_area = {}, None
-data_lock = Lock() 
+data_lock = Lock()
+
 
 # --- aux Function ---
 def place_object(obj_type, existing_positions, max_attempts=100):
@@ -64,6 +65,7 @@ def place_object(obj_type, existing_positions, max_attempts=100):
         ):
             return [x, y, rotation, obj_type, aabb]
     return None
+
 
 def generate_cycle():
     logging.info("Generating a new cycle...")
@@ -114,10 +116,12 @@ def handle_server_calc():
                 objects["IoU"] = progress
 
                 if progress >= 0.95:
-                    logging.info(f"Objective reached with {progress:.2f}%! Resetting cycle.")
+                    logging.info(
+                        f"Objective reached with {progress:.2f}%! Resetting cycle."
+                    )
                     objects, goal_area = generate_cycle()
                     reset_cycle = True
-        
+
             data_to_send = {"objects": objects, "reset": reset_cycle}
             broadcast(json.dumps(data_to_send).encode("utf-8"))
 
@@ -130,7 +134,7 @@ def handle_client_connection(conn, player_id):
     try:
         initial_data = {"objects": objects, "id": player_id, "reset": False}
         conn.sendall(json.dumps(initial_data).encode("utf-8"))
-        
+
         while True:
             data = conn.recv(2048)
             if not data:
@@ -139,14 +143,14 @@ def handle_client_connection(conn, player_id):
             try:
                 update = json.loads(data.decode("utf-8"))
                 player_key = f"P{player_id}"
-                
+
                 with data_lock:
                     if player_key in objects:
                         objects[player_key]["pos"] = update["pos"]
-                
+
             except json.JSONDecodeError:
                 pass
-                
+
     except Exception as e:
         logging.error(f"Client {player_id} error: {e}")
     finally:

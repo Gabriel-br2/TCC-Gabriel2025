@@ -4,6 +4,7 @@ import os
 from LLM.source.api import OPENROUNTER_API
 from LLM.source.local import OLLAMA_APP
 
+
 class Base_Agent:
     def __init__(self, agent_name: str, llm_source: str = "local", model: str = None):
         self.name = agent_name
@@ -36,6 +37,7 @@ class Base_Agent:
     def request(self, path=None):
         print(f"[{self.name}]: {self.payload}")
         if self.payload is None:
-            raise ValueError("The payload was not generated. Call the generate_payload() method first.")
+            raise ValueError(
+                "The payload was not generated. Call the generate_payload() method first."
+            )
         return self.source.request(self.payload, path)
-

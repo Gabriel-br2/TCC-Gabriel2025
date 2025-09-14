@@ -1,11 +1,10 @@
 from LLM.source.LLM_base import Base_Agent
 
+
 class Agent_Thinker(Base_Agent):
     def __init__(self, llm_source="local"):
-        
-        super().__init__(agent_name="THINKER", 
-                         llm_source=llm_source,
-                         model="llava")
+
+        super().__init__(agent_name="THINKER", llm_source=llm_source, model="llava")
 
     def _set_initial_context(self):
         self.context = """Analyze the provided image and generate a JSON with the following fields:
@@ -17,24 +16,28 @@ class Agent_Thinker(Base_Agent):
 
     def _get_return_json_pattern(self) -> dict:
         root = dict()
-        root["position"]       = "Your detailed analysis of agent positions in the previous turn, including movement deltas.",
-        root["interpretation"] = "Your detailed analysis of what happened in previous turns: actions, results, and learnings.",
-        root["action_hint"]    = "Your detailed analysis of what should happen in the next turns: suggested actions and expected results."
-        
-    
+        root["position"] = (
+            "Your detailed analysis of agent positions in the previous turn, including movement deltas.",
+        )
+        root["interpretation"] = (
+            "Your detailed analysis of what happened in previous turns: actions, results, and learnings.",
+        )
+        root["action_hint"] = (
+            "Your detailed analysis of what should happen in the next turns: suggested actions and expected results."
+        )
+
     def think(self, current_turn_data: dict):
-        self.generate_payload(msg=current_turn_data, 
-                              msg_tag="current_turn")
+        self.generate_payload(msg=current_turn_data, msg_tag="current_turn")
         return self.request("screendata/last.jpg")
+
 
 # --------------------------------------------------------------------------------------------
 
+
 class Agent_Player(Base_Agent):
     def __init__(self, llm_source="local"):
-        
-        super().__init__(agent_name="PLAYER", 
-                         llm_source=llm_source,
-                         model="qwen:14b")
+
+        super().__init__(agent_name="PLAYER", llm_source=llm_source, model="qwen:14b")
 
     def _set_initial_context(self):
         self.context = """Your task is to analyze the user's Game interpretation and generate a SINGLE JSON object representing ONE action.
@@ -50,11 +53,19 @@ class Agent_Player(Base_Agent):
 
     def _get_return_json_pattern(self) -> dict:
         root = dict()
-        root["action"]    = "The action to be performed. The value must be EXACTLY 'move' or 'rotate'.",
-        root["object_id"] = "The numeric (integer) ID of the game object to be affected.",
-        root["dx"]        = "USED ONLY IF the action is 'move'. Represents the delta change in the horizontal position (X-axis).",
-        root["dy"]        = "USED ONLY IF the action is 'move'. Represents the delta change in the vertical position (Y-axis)."
-        
+        root["action"] = (
+            "The action to be performed. The value must be EXACTLY 'move' or 'rotate'.",
+        )
+        root["object_id"] = (
+            "The numeric (integer) ID of the game object to be affected.",
+        )
+        root["dx"] = (
+            "USED ONLY IF the action is 'move'. Represents the delta change in the horizontal position (X-axis).",
+        )
+        root["dy"] = (
+            "USED ONLY IF the action is 'move'. Represents the delta change in the vertical position (Y-axis)."
+        )
+
     def play(self, thinker_analysis: dict):
         self.generate_payload(msg=thinker_analysis, msg_tag="Thinker")
         return self.request()

@@ -1,10 +1,9 @@
 import sys
 
-from player.human import HumanPlayer
-from player.linguisticModel import LLM_Player
-
 from objects.generic import GenericShape
 from objects.TShape import TeeweeShape
+from player.human import HumanPlayer
+from player.linguisticModel import LLM_Player
 from screen import Screen
 from utils.config import YamlConfig
 from utils.network import *

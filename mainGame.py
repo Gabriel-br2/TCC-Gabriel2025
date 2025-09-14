@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-
 import argparse
-import threading 
-import time      
+import threading
+import time
 
 from objects.generic import GenericShape
 from objects.teewee import TeeweeShape
@@ -48,12 +47,15 @@ received_objects = initial_data["objects"]
 shape_classes = {"generic": GenericShape, "teewee": TeeweeShape}
 screen = Screen(cfg.data, color.data, client_id, args.player)
 
+
 def initialize_objects(objects_data):
     shapes = []
     for player, value in objects_data.items():
         if player == "IoU":
             continue
-        transparency = 255 if player == f"P{client_id}" else cfg.data["game"]["transparency"]
+        transparency = (
+            255 if player == f"P{client_id}" else cfg.data["game"]["transparency"]
+        )
         player_color = [*color.data[value["color"]], transparency]
         for count, obj in enumerate(value["pos"]):
             shapes.append(
@@ -63,6 +65,7 @@ def initialize_objects(objects_data):
             )
     return sorted(shapes, key=lambda s: (s.id != client_id, s.id, s.obj_id))
 
+
 def network_listener(sock):
     global latest_server_state, game_is_running
     while game_is_running:
@@ -71,29 +74,35 @@ def network_listener(sock):
             print("Conexão com o servidor perdida. Encerrando o jogo.")
             game_is_running = False
             break
-        
+
         with state_lock:
             latest_server_state = server_update
+
 
 shapes = initialize_objects(received_objects)
 iou = received_objects.get("IoU", 0)
 
+
 def start_game():
     global iou, shapes, latest_server_state, game_is_running
 
-    listener_thread = threading.Thread(target=network_listener, args=(client_socket,), daemon=True)
+    listener_thread = threading.Thread(
+        target=network_listener, args=(client_socket,), daemon=True
+    )
     listener_thread.start()
 
     while screen.game_running and game_is_running:
         update_payload = screen.game_loop(shapes, iou)
-        
+
         send_new_position(client_socket, update_payload)
 
         current_update = None
         with state_lock:
-            if latest_server_state: # Verifica se a thread de rede recebeu algo novo
+            if latest_server_state:  # Verifica se a thread de rede recebeu algo novo
                 current_update = latest_server_state
-                latest_server_state = {} # Limpa para não processar a mesma mensagem duas vezes
+                latest_server_state = (
+                    {}
+                )  # Limpa para não processar a mesma mensagem duas vezes
 
         if current_update:
             is_reset = current_update.get("reset", False)
@@ -111,15 +120,18 @@ def start_game():
                         player_key = f"P{shape.id}"
                         if player_key in server_objects:
                             try:
-                                new_pos = server_objects[player_key]["pos"][shape.obj_id]
+                                new_pos = server_objects[player_key]["pos"][
+                                    shape.obj_id
+                                ]
                                 shape.position = new_pos[:-1]
                             except (KeyError, IndexError):
-                                pass 
+                                pass
 
             iou = server_objects.get("IoU", iou)
-        
+
     game_is_running = False
     screen.close()
+
 
 if __name__ == "__main__":
     start_game()

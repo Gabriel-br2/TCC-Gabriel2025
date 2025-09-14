@@ -52,18 +52,16 @@ class Screen:
 
         a = self.width // 20
 
-
-
-        large_font = pygame.font.SysFont("Arial", a, bold=True)        
+        large_font = pygame.font.SysFont("Arial", a, bold=True)
         text_surface = large_font.render(
-            "Objetivo concluído, iniciando próximo ciclo", True, (0, 0, 0) # Cor preta
+            "Objetivo concluído, iniciando próximo ciclo", True, (0, 0, 0)  # Cor preta
         )
-        
-        text_rect = text_surface.get_rect(center=(self.width / 2, self.height / 2))       
+
+        text_rect = text_surface.get_rect(center=(self.width / 2, self.height / 2))
         self.screen.fill(self.color["background"])
-        
-        self.screen.blit(text_surface, text_rect)       
-        pygame.display.flip()        
+
+        self.screen.blit(text_surface, text_rect)
+        pygame.display.flip()
         pygame.time.wait(3000)
 
     # --- Input ---
@@ -79,9 +77,11 @@ class Screen:
             if not os.path.exists("screendata"):
                 os.makedirs("screendata")
 
-            for obj in local_objects + objects: obj.draw_label(obj.id)
+            for obj in local_objects + objects:
+                obj.draw_label(obj.id)
             pygame.image.save(self.screen, "screendata/last.jpg")
-            for obj in local_objects + objects: obj.clear_label()
+            for obj in local_objects + objects:
+                obj.clear_label()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -92,14 +92,12 @@ class Screen:
 
         if self.player_type == "human":
             human_events()
-            
 
         if self.player_type == "LLM":
             if self.lock:
-                self.lock = False            
+                self.lock = False
                 thread1 = threading.Thread(target=LLM_events)
                 thread1.start()
-            
 
     # --- Renderização ---
     def _render(self, objects, iou):
@@ -122,5 +120,3 @@ class Screen:
     # --- Encerramento ---
     def close(self):
         pygame.quit()
-
-    

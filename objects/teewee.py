@@ -6,7 +6,7 @@ class TeeweeShape(Shape):
         self, cfg, id="P9", obj_id=10, screen=None, color=None, initial_position=None
     ):
         self.id = int(str(id)[-1])
-        
+
         self.obj_id = obj_id
 
         size = cfg.data["game"]["objectBaseSquareTam"] / 2
