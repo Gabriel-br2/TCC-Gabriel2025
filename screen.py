@@ -47,6 +47,25 @@ class Screen:
         # Retorna posições do jogador local
         return [[*obj.position, obj.type] for obj in local_player_objects]
 
+    def change_screen(self):
+        # self.width x self.height
+
+        a = self.width // 20
+
+
+
+        large_font = pygame.font.SysFont("Arial", a, bold=True)        
+        text_surface = large_font.render(
+            "Objetivo concluído, iniciando próximo ciclo", True, (0, 0, 0) # Cor preta
+        )
+        
+        text_rect = text_surface.get_rect(center=(self.width / 2, self.height / 2))       
+        self.screen.fill(self.color["background"])
+        
+        self.screen.blit(text_surface, text_rect)       
+        pygame.display.flip()        
+        pygame.time.wait(3000)
+
     # --- Input ---
     def _handle_events(self, objects, local_objects):
         def human_events():
@@ -103,3 +122,5 @@ class Screen:
     # --- Encerramento ---
     def close(self):
         pygame.quit()
+
+    

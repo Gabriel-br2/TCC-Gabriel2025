@@ -102,6 +102,9 @@ def start_game():
             if is_reset:
                 print("🚀 New cycle started! Re-initializing objects.")
                 shapes = initialize_objects(server_objects)
+
+                screen.change_screen()
+
             else:
                 for shape in shapes:
                     if shape.id != client_id:
