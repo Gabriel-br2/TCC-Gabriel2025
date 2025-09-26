@@ -1,9 +1,14 @@
 import os
 import threading
+import webbrowser
 
 import pygame
+from dotenv import load_dotenv
 from players.human import humanInteraction
 from players.LLM import LLM_PLAYER
+
+load_dotenv()
+URL = os.getenv("FORM_URL")
 
 
 class Screen:
@@ -19,6 +24,7 @@ class Screen:
             self.LLM = LLM_PLAYER(LLM_source)
 
         self.fps = 60
+        self.iou = 0.0
         self.lock = True
         self.menu_running = True
         self.game_running = True
@@ -36,7 +42,6 @@ class Screen:
 
     # --- Loop principal ---
     def game_loop(self, objects, iou):
-        # <<< MUDANÇA: Seleciona os objetos do jogador local pelo ID, não pela posição na lista.
         local_player_objects = [obj for obj in objects if obj.id == self.client_id]
 
         self._render(objects, iou)
@@ -44,15 +49,13 @@ class Screen:
 
         self.clock.tick(self.fps)
 
-        # Retorna posições do jogador local
         return [[*obj.position, obj.type] for obj in local_player_objects]
 
     def change_screen(self):
-        large_font = pygame.font.SysFont("Arial", self.width // 20, bold=True)
+        large_font = pygame.font.SysFont("Arial", self.width // 35, bold=True)
         text_surface = large_font.render(
-            "Objetivo concluído, iniciando próximo ciclo", True, (0, 0, 0)  # Cor preta
+            "Objetivo concluído, iniciando próximo ciclo", True, (0, 0, 0)
         )
-
         text_rect = text_surface.get_rect(center=(self.width / 2, self.height / 2))
         self.screen.fill(self.color["background"])
 
@@ -61,19 +64,30 @@ class Screen:
         pygame.time.wait(3000)
 
     def end_screen(self):
+        end_font = pygame.font.SysFont("Arial", self.width // 35, bold=True)
+        end_text = end_font.render(
+            "Experimento concluído! Por favor responda o Questinário:", True, (0, 0, 0)
+        )
+        end_rect = end_text.get_rect(center=(self.width / 2, self.height / 2))
+
+        end_font.set_underline(True)
+        link_text = end_font.render("Questionário via Google Forms", True, (0, 0, 255))
+        link_rect = link_text.get_rect(center=(self.width / 2, self.height / 2 + 150))
+
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.close()
                     return
 
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    if link_rect.collidepoint(event.pos):
+                        webbrowser.open(URL)
+
             self.screen.fill(self.color["background"])
-            end_font = pygame.font.SysFont("Arial", self.width // 20, bold=True)
-            end_text = end_font.render(
-                "Experimento concluído! Obrigado por jogar!", True, (0, 0, 0)
-            )
-            end_rect = end_text.get_rect(center=(self.width / 2, self.height / 2))
             self.screen.blit(end_text, end_rect)
+            self.screen.blit(link_text, link_rect)
+
             pygame.display.flip()
             self.clock.tick(self.fps)
 
@@ -100,7 +114,7 @@ class Screen:
                 if event.type == pygame.QUIT:
                     self.game_running = False
                     return
-            self.LLM.LLMInteraction(objects, local_objects)
+            self.LLM.LLMInteraction(objects, local_objects, self.iou)
             self.lock = True
 
         if self.player_type == "human":
@@ -124,6 +138,7 @@ class Screen:
             obj.draw()
 
     def _draw_iou(self, iou):
+        self.iou = iou
         text = self.font.render(
             f"Objetivo Concluído: {iou * 100:.2f} %", True, (0, 0, 0)
         )

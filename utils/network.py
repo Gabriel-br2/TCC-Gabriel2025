@@ -45,4 +45,4 @@ def receive_new_position(client_socket):
         return json.loads(data)
     except json.JSONDecodeError:
         print("Erro ao decodificar os dados recebidos do servidor.")
-        return json.loads("}".join(a.split("}")[:4]) + "}")
+        return json.loads("}".join(data.split("}")[:4]) + "}")

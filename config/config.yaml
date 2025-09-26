@@ -1,7 +1,7 @@
 screen:
   caption: Projeto de TCC - Gabriel
-  height: 500
-  width: 500
+  height: 800
+  width: 1200
 
 game:
   playerNum: 2

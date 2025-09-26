@@ -19,27 +19,53 @@ class LLM_PLAYER:
         self.logger.log_metadata([self.Thinker, self.Player])
         self.turn_counter = 0
 
-    def LLMInteraction(self, _, my_objects):
+    def LLMInteraction(self, other_objects, my_objects, score):
         self.turn_counter += 1
 
         interpretation = self.Thinker.think("data")
         command = self.Player.play(interpretation)
 
-        self.logger.log_turn(
-            self.turn_counter, self.Thinker.name, self.Thinker.payload, interpretation
-        )
-        self.logger.log_turn(
-            self.turn_counter, self.Player.name, self.Player.payload, command
-        )
+        print("COMANDO RECEBIDO:", command)
 
         obj = my_objects[command["object_id"]]
 
+        okay = False
         if command["action"] == "move":
-            return move_object(obj, command["dx"], command["dy"], my_objects)
+            okay = move_object(obj, command["dx"], command["dy"], my_objects)
 
         elif command["action"] == "rotate":
             rotate_object(obj)
-            return True
+            okay = True
+
+        positions = {}
+        for i in other_objects:
+            positions[f"player {i.id} objects"] = i.position
+        for k in my_objects:
+            positions["my objects"] = i.position
+
+        self.Thinker.memory_save(
+            self, self.turn_counter, positions, interpretation, command
+        )
+        self.Player.memory_save(
+            self, self.turn_counter, positions, interpretation, command
+        )
+
+        self.logger.log_turn(
+            self.turn_counter,
+            self.Thinker.name,
+            self.Thinker.payload,
+            self.Thinker.tag,
+            interpretation,
+        )
+        self.logger.log_turn(
+            self.turn_counter,
+            self.Player.name,
+            self.Player.payload,
+            self.Player.tag,
+            command,
+        )
+
+        return okay
 
 
 # --------------------------------------------------------------------------------------------
@@ -69,7 +95,12 @@ class Logger:
         }
         self._save_to_file()
 
-    def log_turn(self, turn_number: int, agent_name: str, payload: str, response: dict):
+    def log_turn(
+        self, turn_number: int, agent_name: str, payload: str, tag: str, response: dict
+    ):
+        payload = payload.split(f"<{tag}>")[1].split(f"</{tag}>")[0].strip()
+        payload = payload.replace("\n", " ").replace("  ", " ")
+
         turn_key = f"turn_{turn_number}"
 
         if turn_key not in self.log_data["turns"]:
