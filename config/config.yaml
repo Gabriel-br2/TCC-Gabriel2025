@@ -11,5 +11,6 @@ game:
   transparency: 50
 
 server:
+  showMonitor: True
   ip: localhost
   port: 5555

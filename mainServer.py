@@ -8,6 +8,7 @@ import time
 from _thread import start_new_thread
 from threading import Lock
 
+from screenServer import ScreenMonitor
 from utils.colision import *
 from utils.config import YamlConfig
 from utils.dinamic_import import plugins_import
@@ -28,6 +29,7 @@ num_objects = cfg.data["game"]["objectsNum"]
 num_players = cfg.data["game"]["playerNum"]
 screen_width = cfg.data["screen"]["width"]
 screen_height = cfg.data["screen"]["height"]
+show_monitor = cfg.data["server"]["showMonitor"]
 
 # --- Socket ---
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,6 +48,8 @@ clients = []
 objects, goal_area = {}, None
 cycle_id = 0
 data_lock = Lock()
+
+# --- Screen ---
 
 
 def place_object(obj_type, existing_positions, max_attempts=100):
@@ -104,12 +108,16 @@ def broadcast(data, client_list):
 
 
 def handle_server_calc():
-    global objects, goal_area
+    global screen, objects, goal_area
+
+    screen = ScreenMonitor(cfg.data, color.data, modelsClass) if show_monitor else None
+
     while True:
         if len(clients) == num_players:
             data_to_send = None
             client_list_copy = []
 
+            progress = 0
             with data_lock:
                 reset_cycle = False
                 reorganized = reorganize_data(objects, modelsClass)
@@ -131,6 +139,8 @@ def handle_server_calc():
 
             if data_to_send and client_list_copy:
                 broadcast(data_to_send, client_list_copy)
+                if show_monitor:
+                    screen.game_loop(objects, progress)
 
         time.sleep(0.25)
 
