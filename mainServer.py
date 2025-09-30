@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import datetime
 import json
 import logging
 import os
@@ -12,6 +13,7 @@ from screenServer import ScreenMonitor
 from utils.colision import *
 from utils.config import YamlConfig
 from utils.dinamic_import import plugins_import
+from utils.logger import Logger_data
 from utils.objective import *
 
 # --- Config ---
@@ -50,6 +52,9 @@ cycle_id = 0
 data_lock = Lock()
 
 # --- Screen ---
+timestamp = datetime.datetime.now().strftime("%d_%m_%H_%M_%S")
+logger = Logger_data(timestamp)
+logger.log_metadata(cfg.data)
 
 
 def place_object(obj_type, existing_positions, max_attempts=100):
@@ -108,11 +113,12 @@ def broadcast(data, client_list):
 
 
 def handle_server_calc():
-    global screen, objects, goal_area
+    global screen, objects, goal_area, logger
 
     screen = ScreenMonitor(cfg.data, color.data, modelsClass) if show_monitor else None
 
     while True:
+        objective = False
         if len(clients) == num_players:
             data_to_send = None
             client_list_copy = []
@@ -126,9 +132,12 @@ def handle_server_calc():
                 objects["IoU"] = progress
 
                 if progress >= 0.95:
+                    objective = True
+
                     logging.info(
                         f"Objective reached with {progress:.2f}%! Resetting cycle."
                     )
+
                     objects, goal_area = generate_cycle()
                     reset_cycle = True
 
@@ -139,6 +148,18 @@ def handle_server_calc():
 
             if data_to_send and client_list_copy:
                 broadcast(data_to_send, client_list_copy)
+                logger.log_event(
+                    "objective_progress",
+                    {
+                        "goal_area": goal_area,
+                        "cycle_id": cycle_id,
+                        "union_area": union_area,
+                        "progress": progress,
+                    },
+                )
+                if objective:
+                    logger.log_event("Objective reached", {"cycle_id": cycle_id})
+
                 if show_monitor:
                     screen.game_loop(objects, progress)
 
@@ -146,10 +167,15 @@ def handle_server_calc():
 
 
 def handle_client_connection(conn, player_id):
-    global objects, cycle_id
+    global objects, cycle_id, timestamp
     try:
         with data_lock:
-            initial_data = {"objects": objects, "id": player_id, "reset": False}
+            initial_data = {
+                "objects": objects,
+                "id": player_id,
+                "timestamp": timestamp,
+                "reset": False,
+            }
             conn.sendall(json.dumps(initial_data).encode("utf-8"))
 
         while True:
@@ -201,4 +227,9 @@ if __name__ == "__main__":
 
     logging.warning("Max players reached. No longer accepting connections.")
     while True:
-        time.sleep(60)
+        try:
+            time.sleep(60)
+        except KeyboardInterrupt:
+            logging.info("Server shutting down.")
+            break
+    logger.processData()

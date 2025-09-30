@@ -12,7 +12,9 @@ URL = os.getenv("FORM_URL")
 
 
 class Screen:
-    def __init__(self, config, color, client_id, player_type, LLM_source="local"):
+    def __init__(
+        self, config, color, client_id, timestamp, player_type, LLM_source="local"
+    ):
         pygame.init()
 
         self.config = config
@@ -21,7 +23,7 @@ class Screen:
         self.player_type = player_type
 
         if player_type == "LLM":
-            self.LLM = LLM_PLAYER(LLM_source)
+            self.LLM = LLM_PLAYER(timestamp, client_id, LLM_source)
 
         self.fps = 60
         self.iou = 0.0

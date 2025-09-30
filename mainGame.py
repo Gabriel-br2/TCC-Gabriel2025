@@ -44,13 +44,13 @@ color = YamlConfig("color")
 cfg.read_config()
 color.read_config()
 
-client_socket, client_id, initial_data = establish_client_connection(cfg)
+client_socket, client_id, initial_data, timestamp = establish_client_connection(cfg)
 received_objects = initial_data["objects"]
 
 current_cycle_id = received_objects.get("cycle_id", 0)
 shape_classes = plugins_import("objects")
 
-screen = Screen(cfg.data, color.data, client_id, args.player)
+screen = Screen(cfg.data, color.data, client_id, timestamp, args.player)
 
 
 def initialize_objects(objects_data):

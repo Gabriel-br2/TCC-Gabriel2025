@@ -31,7 +31,7 @@ def establish_client_connection(config):
     print("Cliente - Dados iniciais recebidos")
 
     data = json.loads(initial_data)
-    return client_socket, data["id"], data
+    return client_socket, data["id"], data, data["timestamp"]
 
 
 def send_new_position(client_socket, new_position, current_cycle_id):
