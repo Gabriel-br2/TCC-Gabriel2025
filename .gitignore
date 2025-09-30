@@ -167,3 +167,5 @@ cython_debug/
 .venv_path
 TCC/
 screendata/last.jpg
+LLM/source/__pycache__/
+LLM/logs/
