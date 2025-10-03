@@ -13,4 +13,4 @@ game:
 server:
   showMonitor: True
   ip: localhost
-  port: 5555
+  port: 8000

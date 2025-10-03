@@ -35,7 +35,7 @@ show_monitor = cfg.data["server"]["showMonitor"]
 
 # --- Socket ---
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_ip = socket.gethostbyname(cfg.data["server"]["ip"])
+server_ip = socket.gethostbyname("localhost")
 server_port = cfg.data["server"]["port"]
 server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server_socket.bind((server_ip, server_port))
@@ -231,5 +231,5 @@ if __name__ == "__main__":
             time.sleep(60)
         except KeyboardInterrupt:
             logging.info("Server shutting down.")
+            logger.processData()
             break
-    logger.processData()
