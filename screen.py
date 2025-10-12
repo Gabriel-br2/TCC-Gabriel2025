@@ -12,18 +12,12 @@ URL = os.getenv("FORM_URL")
 
 
 class Screen:
-    def __init__(
-        self, config, color, client_id, timestamp, player_type, LLM_source="local"
-    ):
+    def __init__(self, config, color, player_type):
         pygame.init()
 
         self.config = config
         self.color = color
-        self.client_id = client_id
         self.player_type = player_type
-
-        if player_type == "LLM":
-            self.LLM = LLM_PLAYER(timestamp, client_id, LLM_source)
 
         self.fps = 60
         self.iou = 0.0
@@ -36,11 +30,39 @@ class Screen:
 
         self.clock = pygame.time.Clock()
         self.font = pygame.font.SysFont("Arial", 18, bold=True)
+        self.large_font = pygame.font.SysFont("Arial", 32, bold=True)
 
         self.screen = pygame.display.set_mode((self.width, self.height))
+        pygame.display.set_caption(config["screen"]["caption"])
+
+    def setup_player_specifics(self, client_id, timestamp, LLM_source="local"):
+        self.client_id = client_id
         pygame.display.set_caption(
-            f"{config['screen']['caption']} - player: {client_id}"
+            f"{self.config['screen']['caption']} - player: {self.client_id}"
         )
+        if self.player_type == "LLM":
+            self.LLM = LLM_PLAYER(timestamp, client_id, LLM_source)
+
+    def show_waiting_screen(self, attempt_count):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.game_running = False
+                return False
+
+        self.screen.fill(self.color["background"])
+
+        dots = "." * (attempt_count % 4)
+
+        text_surface = self.large_font.render(
+            f"Conectando ao servidor{dots}", True, (0, 0, 0)
+        )
+        text_rect = text_surface.get_rect(center=(self.width / 2, self.height / 2))
+
+        self.screen.blit(text_surface, text_rect)
+        pygame.display.flip()
+
+        self.clock.tick(10)
+        return True
 
     # --- Loop principal ---
     def game_loop(self, objects, iou):

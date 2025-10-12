@@ -168,6 +168,7 @@ def handle_server_calc():
 
 def handle_client_connection(conn, player_id):
     global objects, cycle_id, timestamp
+
     try:
         with data_lock:
             initial_data = {
@@ -176,6 +177,11 @@ def handle_client_connection(conn, player_id):
                 "timestamp": timestamp,
                 "reset": False,
             }
+
+            nature = conn.recv(2048)
+            nature = json.loads(nature.decode("utf-8")).get("nature")
+            logging.info(f"Client {player_id} identified as {nature}.")
+
             conn.sendall(json.dumps(initial_data).encode("utf-8"))
 
         while True:

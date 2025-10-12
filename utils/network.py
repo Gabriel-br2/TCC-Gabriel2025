@@ -3,35 +3,39 @@ import socket
 import time
 
 
-def establish_client_connection(config):
+def establish_client_connection(config, nature):
+    """
+    Tenta estabelecer uma conexão com o servidor.
+    Retorna os dados da conexão em caso de sucesso ou None em caso de falha.
+    """
     server_ip = config.data["server"]["ip"]
     port = config.data["server"]["port"]
-
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    timeout = 1
 
-    while True:
-        try:
-            client_socket.connect((server_ip, port))
-            print("Cliente conectado ao servidor!")
-            break
+    # Define um timeout curto para a tentativa de conexão não bloquear o programa
+    client_socket.settimeout(2)
 
-        except Exception as e:
-            print(
-                "Falha ao conectar ao servidor. Certifique-se de que ele está em execução e acessível."
-            )
+    try:
+        print(f"Tentando conectar a {server_ip}:{port}...")
+        client_socket.connect((server_ip, port))
+        print("Cliente conectado ao servidor!")
 
-            print(
-                f"Tentando novamente em {timeout} segundo{'s' if timeout > 1 else ''}..."
-            )
-            time.sleep(timeout)
-            timeout = 5
+        # Envia a 'natureza' do jogador (human/LLM)
+        update_message = {"nature": nature}
+        client_socket.sendall(json.dumps(update_message).encode("utf-8"))
 
-    initial_data = client_socket.recv(4096).decode("utf-8")
-    print("Cliente - Dados iniciais recebidos")
+        # Recebe os dados iniciais
+        initial_data = client_socket.recv(4096).decode("utf-8")
+        print("Cliente - Dados iniciais recebidos")
+        data = json.loads(initial_data)
 
-    data = json.loads(initial_data)
-    return client_socket, data["id"], data, data["timestamp"]
+        # Retorna os dados da conexão bem-sucedida
+        return client_socket, data["id"], data, data["timestamp"]
+
+    except (socket.timeout, ConnectionRefusedError, OSError) as e:
+        print(f"Falha ao conectar ao servidor: {e}. Tentando novamente...")
+        client_socket.close()
+        return None
 
 
 def send_new_position(client_socket, new_position, current_cycle_id):
