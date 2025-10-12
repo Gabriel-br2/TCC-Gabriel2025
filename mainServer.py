@@ -46,6 +46,8 @@ object_import = plugins_import("objects")
 object_options = list(object_import.keys())
 modelsClass = {key: item(cfg).vertices for key, item in object_import.items()}
 
+player_queue = []
+
 clients = []
 objects, goal_area = {}, None
 cycle_id = 0
@@ -55,6 +57,42 @@ data_lock = Lock()
 timestamp = datetime.datetime.now().strftime("%d_%m_%H_%M_%S")
 logger = Logger_data(timestamp)
 logger.log_metadata(cfg.data)
+
+
+def add_player_to_queue(player_id, nature, conn):
+    global player_queue
+    player_queue.append((player_id, nature, conn))
+    logging.info(f"Player {player_id} ({nature}) added to the queue.")
+    return reorganize_queue()
+
+
+def reorganize_queue():
+    global player_queue
+
+    c = cfg.data["scenario"]["scenario"]
+    base = cfg.data["scenario"][f"c_{c}"]
+
+    total = len(base) * num_players
+
+    if len(player_queue) < total:
+        available_slots = []
+        for i, nature_type in enumerate(base):
+            available_slots.extend([(nature_type, i, None)] * num_players)
+
+        print(available_slots)
+
+        def get_complex_sort_key(item):
+            nature_type = item[1]
+            for i, (slot_type, base_index, coon) in enumerate(available_slots):
+                if slot_type == nature_type:
+                    available_slots.pop(i)
+                    return base_index * 1000 + i
+            return len(base) * 1000 + len(A) + item[0]
+
+        player_queue = sorted(player_queue.copy(), key=get_complex_sort_key)[:total]
+
+        return True
+    return False
 
 
 def place_object(obj_type, existing_positions, max_attempts=100):
@@ -167,7 +205,7 @@ def handle_server_calc():
 
 
 def handle_client_connection(conn, player_id):
-    global objects, cycle_id, timestamp
+    global objects, cycle_id, timestamp, player_queue
 
     try:
         with data_lock:
@@ -181,6 +219,8 @@ def handle_client_connection(conn, player_id):
             nature = conn.recv(2048)
             nature = json.loads(nature.decode("utf-8")).get("nature")
             logging.info(f"Client {player_id} identified as {nature}.")
+
+            add_player_to_queue(player_id, nature, conn)
 
             conn.sendall(json.dumps(initial_data).encode("utf-8"))
 
