@@ -54,7 +54,7 @@ class Screen:
         dots = "." * (attempt_count % 4)
 
         text_surface = self.large_font.render(
-            f"Conectando ao servidor{dots}", True, (0, 0, 0)
+            f"Rodada já completada aguarde sua vez {dots}", True, (0, 0, 0)
         )
         text_rect = text_surface.get_rect(center=(self.width / 2, self.height / 2))
 
