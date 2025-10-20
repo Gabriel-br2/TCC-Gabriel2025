@@ -169,3 +169,5 @@ TCC/
 screendata/last.jpg
 LLM/source/__pycache__/
 LLM/logs/
+LOGS/
+screendata/last.jpg
