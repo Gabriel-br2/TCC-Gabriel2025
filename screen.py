@@ -88,6 +88,8 @@ class Screen:
         pygame.time.wait(3000)
 
     def end_screen(self):
+        return
+
         end_font = pygame.font.SysFont("Arial", self.width // 35, bold=True)
         end_text = end_font.render(
             "Experimento concluído! Por favor responda o Questinário:", True, (0, 0, 0)
