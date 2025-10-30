@@ -97,13 +97,26 @@ if connection_data:
 
     def network_listener(sock):
         global latest_server_state, game_is_running
+
         while game_is_running:
             server_update = receive_new_position(sock)
+
+            # Caso 1: Timeout (Servidor quieto, esperando P2, etc.)
+            # Apenas ignore e tente ler de novo no próximo loop.
             if server_update is None:
-                print("Conexão com o servidor perdida. Encerrando o jogo.")
+                continue  # <-- Esta é a mudança principal
+
+            # Caso 2: Erro real (Desconexão, etc.)
+            # Agora verificamos se é um dict e se tem a chave "error"
+            if isinstance(server_update, dict) and "error" in server_update:
+                print(
+                    f"Erro na conexão com o servidor: {server_update['error']}. Encerrando o jogo."
+                )
                 game_is_running = False
                 break
 
+            # Caso 3: Dados válidos recebidos
+            # Se não for None e não for um erro, são dados do jogo.
             with state_lock:
                 latest_server_state = server_update
 
