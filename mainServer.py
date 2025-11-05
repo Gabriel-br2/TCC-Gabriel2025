@@ -180,9 +180,14 @@ def handle_client_connection(conn, player_id):
                 "reset": False,
             }
 
-            nature = conn.recv(2048)
-            nature = json.loads(nature.decode("utf-8")).get("nature")
-            logging.info(f"Client {player_id} identified as {nature}.")
+            init_client_date = conn.recv(2048)
+            init_client_date = json.loads(init_client_date.decode("utf-8"))
+
+            nature = init_client_date.get("nature")
+            nameID = init_client_date.get("name")
+
+            logging.info(f"Client {player_id} identified as {nature} is {nameID}.")
+            logger.log_player(player_id, nameID)
 
             conn.sendall(json.dumps(initial_data).encode("utf-8"))
 

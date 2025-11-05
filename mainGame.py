@@ -54,7 +54,7 @@ while screen.game_running and connection_data is None:
         game_is_running = False
         break
 
-    connection_data = establish_client_connection(cfg, args.player)
+    connection_data = establish_client_connection(cfg, args.player, screen.nameId)
 
     if connection_data is None:
         time.sleep(2)
@@ -131,11 +131,14 @@ if connection_data:
         )
         listener_thread.start()
 
+        c = 0
         while screen.game_running and game_is_running:
+            c += 1
             update_payload = screen.game_loop(shapes, iou)
 
-            if update_payload:
-                send_new_position(client_socket, update_payload, current_cycle_id)
+            if c == 1 or (c % 75) == 0:
+                if update_payload:
+                    send_new_position(client_socket, update_payload, current_cycle_id)
 
             current_update = None
             with state_lock:

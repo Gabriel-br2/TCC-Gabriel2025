@@ -67,10 +67,19 @@ class Logger_data:
 
         self.log_file_path = os.path.join(log_base_folder, "game_events.jsonl")
         self.log_metadata_path = os.path.join(log_base_folder, "game_metadata.json")
+        self.log_nature_path = os.path.join(log_base_folder, "game_players.jsonl")
+
         self.start_time = time.perf_counter()
 
         self.last_progress_time = None
         self.last_progress_value = None
+
+    def log_player(self, ID, name):
+        full_data = {"id": ID, "name": name}
+
+        with open(self.log_nature_path, "a", encoding="utf-8") as f:
+            json_string = json.dumps(full_data, ensure_ascii=False)
+            f.write(json_string + "\n")
 
     def log_metadata(self, metadata: dict):
         full_metadata = {
@@ -86,7 +95,7 @@ class Logger_data:
 
         if event_type == "objective_progress":
             current_progress = details.get("progress", 0) * 100
-            rate_of_change = None  # Valor padrão
+            rate_of_change = None
 
             if (
                 self.last_progress_time is not None

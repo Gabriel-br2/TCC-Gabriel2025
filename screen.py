@@ -35,6 +35,143 @@ class Screen:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(config["screen"]["caption"])
 
+        self.nameId = None
+        if self.player_type == "human":
+            self.nameId = self.initial_screen()
+
+    def initial_screen(self):
+        nome = ""
+        sobrenome = ""
+
+        box_width = 300
+        box_height = 40
+
+        input_box_nome = pygame.Rect(
+            self.width / 2 - box_width / 2, self.height / 2 - 100, box_width, box_height
+        )
+        input_box_sobrenome = pygame.Rect(
+            self.width / 2 - box_width / 2, self.height / 2, box_width, box_height
+        )
+        continue_button = pygame.Rect(
+            self.width / 2 - 100, self.height / 2 + 100, 200, 50
+        )
+
+        color_inactive = pygame.Color("gray")
+        color_active = pygame.Color("black")
+        color_button_inactive = pygame.Color("darkgray")
+        color_button_active = pygame.Color(0, 150, 0)  #
+
+        active_nome = False
+        active_sobrenome = False
+
+        running = True
+        while running:
+            fields_filled = bool(nome and sobrenome)
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.game_running = False  # Sinaliza para o app principal fechar
+                    running = False
+                    return None, None  # Retorna None se o usuário fechar a janela
+
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    # Checa cliques nos campos de input
+                    if input_box_nome.collidepoint(event.pos):
+                        active_nome = True
+                        active_sobrenome = False
+                    elif input_box_sobrenome.collidepoint(event.pos):
+                        active_nome = False
+                        active_sobrenome = True
+                    # Checa clique no botão "Continuar"
+                    elif continue_button.collidepoint(event.pos) and fields_filled:
+                        running = False  # Sai do loop e retorna os nomes
+                    else:
+                        # Desativa ambos se clicar fora
+                        active_nome = False
+                        active_sobrenome = False
+
+                if event.type == pygame.KEYDOWN:
+                    # Lógica para o campo "Nome"
+                    if active_nome:
+                        if event.key == pygame.K_BACKSPACE:
+                            nome = nome[:-1]
+                        elif event.key == pygame.K_TAB:
+                            # Pula para o próximo campo
+                            active_nome = False
+                            active_sobrenome = True
+                        else:
+                            nome += event.unicode
+                    # Lógica para o campo "Sobrenome"
+                    elif active_sobrenome:
+                        if event.key == pygame.K_BACKSPACE:
+                            sobrenome = sobrenome[:-1]
+                        elif event.key == pygame.K_TAB:
+                            # Pula para o campo anterior
+                            active_nome = True
+                            active_sobrenome = False
+                        elif (
+                            event.key in (pygame.K_RETURN, pygame.K_KP_ENTER)
+                            and fields_filled
+                        ):
+                            running = False  # Permite submeter com Enter se os campos estiverem preenchidos
+                        else:
+                            sobrenome += event.unicode
+
+            # --- Seção de Desenho (Renderização) ---
+
+            self.screen.fill(self.color["background"])
+
+            # Título da tela
+            title_surf = self.large_font.render(
+                "Identificação do Jogador", True, (0, 0, 0)
+            )
+            title_rect = title_surf.get_rect(center=(self.width / 2, self.height / 4))
+            self.screen.blit(title_surf, title_rect)
+
+            # --- Campo "Nome" ---
+            # Label (Rótulo)
+            label_nome_surf = self.font.render("Nome:", True, (0, 0, 0))
+            self.screen.blit(label_nome_surf, (input_box_nome.x, input_box_nome.y - 25))
+            # Caixa de input
+            color_nome = color_active if active_nome else color_inactive
+            pygame.draw.rect(self.screen, color_nome, input_box_nome, 2)
+            # Texto dentro da caixa
+            txt_surface_nome = self.font.render(nome, True, (0, 0, 0))
+            self.screen.blit(
+                txt_surface_nome, (input_box_nome.x + 5, input_box_nome.y + 5)
+            )
+
+            # --- Campo "Sobrenome" ---
+            # Label (Rótulo)
+            label_sobrenome_surf = self.font.render("Sobrenome:", True, (0, 0, 0))
+            self.screen.blit(
+                label_sobrenome_surf,
+                (input_box_sobrenome.x, input_box_sobrenome.y - 25),
+            )
+            # Caixa de input
+            color_sobrenome = color_active if active_sobrenome else color_inactive
+            pygame.draw.rect(self.screen, color_sobrenome, input_box_sobrenome, 2)
+            # Texto dentro da caixa
+            txt_surface_sobrenome = self.font.render(sobrenome, True, (0, 0, 0))
+            self.screen.blit(
+                txt_surface_sobrenome,
+                (input_box_sobrenome.x + 5, input_box_sobrenome.y + 5),
+            )
+
+            button_color = (
+                color_button_active if fields_filled else color_button_inactive
+            )
+            pygame.draw.rect(self.screen, button_color, continue_button)
+
+            btn_text_surf = self.font.render("Continuar", True, (255, 255, 255))
+            btn_text_rect = btn_text_surf.get_rect(center=continue_button.center)
+            self.screen.blit(btn_text_surf, btn_text_rect)
+
+            pygame.display.flip()
+            self.clock.tick(self.fps)
+
+        return f"{nome} {sobrenome}"
+
     def setup_player_specifics(self, client_id, timestamp, LLM_source="local"):
         self.client_id = client_id
         pygame.display.set_caption(

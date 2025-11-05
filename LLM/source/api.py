@@ -1,5 +1,7 @@
 #!/usr/bin/env python
+import base64
 import json
+import mimetypes
 import os
 
 from dotenv import load_dotenv
@@ -14,15 +16,74 @@ class OPENROUNTER_API:
         self.api_key = os.getenv("API_KEY")
         self.model = model
 
+        if not self.base_url or not self.api_key:
+            raise OSError("BASE_URL e API_KEY devem estar definidos no .env")
+        if not self.model:
+            raise ValueError("O 'model' deve ser especificado.")
+
         self.client = OpenAI(base_url=self.base_url, api_key=self.api_key)
-        self.api_extra_headers = ""
 
-    def request(self, payload, path) -> str:
-        request = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": payload}],
-            response_format={"type": "json_object"},
-            # reasoning_effort='low' || 'high' || 'medium'
-        )
+    def _encode_image(self, image_path: str) -> str:
+        print("###########", image_path)
 
-        return request.choices[0].message.content
+        with open(image_path, "rb") as image_file:
+            base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+
+        return f"data:image/jpg;base64,{base64_image}"
+
+    def message_image(self, text_prompt, image_data_url):
+        msg = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": text_prompt},
+                    {"type": "image_url", "image_url": {"url": image_data_url}},
+                ],
+            }
+        ]
+
+        return msg
+
+    def message(self, text_prompt):
+        msg = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": text_prompt},
+                ],
+            }
+        ]
+
+        return msg
+
+    def request(self, text_prompt: str, image_path: str) -> str:
+        if image_path is not None:
+            image_data_url = self._encode_image(image_path)
+
+        try:
+            if image_path is not None:
+                messages = self.message_image(text_prompt, image_data_url)
+            else:
+                messages = self.message(text_prompt)
+
+            request = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                max_tokens=1024,
+                response_format={"type": "json_object"},
+            )
+
+            return json.loads(request.choices[0].message.content)
+
+        except FileNotFoundError:
+            return f"Erro: Arquivo de imagem não encontrado em {image_path}"
+        except Exception as e:
+            return f"Ocorreu um erro: {e}"
+
+    # 🚨 IMPORTANTE:
+    # Você DEVE usar um modelo que suporte visão (multimodal).
+    # Modelos de texto puro (como gpt-3.5-turbo) não funcionarão.
+    # Exemplos para OpenRouter:
+    # - "openai/gpt-4o"
+    # - "anthropic/claude-3-sonnet"
+    # - "google/gemini-pro-vision"
