@@ -55,7 +55,7 @@ data_lock = Lock()
 
 # --- Screen ---
 timestamp = datetime.datetime.now().strftime("%d_%m_%H_%M_%S")
-logger = Logger_data(timestamp)
+logger = Logger_data(timestamp, player_colors)
 logger.log_metadata(cfg.data)
 
 

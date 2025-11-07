@@ -61,9 +61,11 @@ class Logger_LLM:
 
 
 class Logger_data:
-    def __init__(self, timestamp, log_base_folder="LOGS"):
+    def __init__(self, timestamp, color, log_base_folder="LOGS"):
         log_base_folder = os.path.join(log_base_folder, f"{timestamp}")
         os.makedirs(log_base_folder, exist_ok=True)
+        self.timestamp = timestamp
+        self.color = color
 
         self.log_file_path = os.path.join(log_base_folder, "game_events.jsonl")
         self.log_metadata_path = os.path.join(log_base_folder, "game_metadata.json")
@@ -75,7 +77,7 @@ class Logger_data:
         self.last_progress_value = None
 
     def log_player(self, ID, name):
-        full_data = {"id": ID, "name": name}
+        full_data = {"id": ID, "color": self.color, "name": name}
 
         with open(self.log_nature_path, "a", encoding="utf-8") as f:
             json_string = json.dumps(full_data, ensure_ascii=False)
@@ -84,6 +86,7 @@ class Logger_data:
     def log_metadata(self, metadata: dict):
         full_metadata = {
             "session_start_timestamp": self.start_time,
+            "date": self.timestamp,
             **metadata,
         }
         with open(self.log_metadata_path, "w", encoding="utf-8") as f:
