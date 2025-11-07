@@ -4,8 +4,8 @@ import webbrowser
 
 import pygame
 from dotenv import load_dotenv
+
 from players.human import humanInteraction
-from players.LLM import LLM_PLAYER
 
 load_dotenv()
 URL = os.getenv("FORM_URL")
@@ -177,8 +177,6 @@ class Screen:
         pygame.display.set_caption(
             f"{self.config['screen']['caption']} - player: {self.client_id}"
         )
-        if self.player_type == "LLM":
-            self.LLM = LLM_PLAYER(timestamp, client_id, LLM_source)
 
     def show_waiting_screen(self, attempt_count):
         for event in pygame.event.get():
