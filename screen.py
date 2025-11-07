@@ -3,12 +3,8 @@ import threading
 import webbrowser
 
 import pygame
-from dotenv import load_dotenv
 
 from players.human import humanInteraction
-
-load_dotenv()
-URL = os.getenv("FORM_URL")
 
 
 class Screen:

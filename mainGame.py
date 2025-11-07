@@ -18,34 +18,13 @@ state_lock = threading.Lock()
 game_is_running = True
 current_cycle_id = 0
 
-# --- Configuração de Argumentos ---
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "--player",
-    type=str,
-    choices=["human", "LLM"],
-    required=True,
-    help="Choose the type of player",
-)
-parser.add_argument(
-    "--source",
-    type=str,
-    choices=["api", "local"],
-    help="LLM source (required if --player=LLM)",
-)
-args = parser.parse_args()
-if args.player == "LLM" and not args.source:
-    parser.error("The --source argument is required when --player is LLM.")
-if args.player == "human" and args.source:
-    parser.error("The --source argument is not valid when --player is human.")
-
 # --- Leitura de Configurações ---
 cfg = YamlConfig("config")
 color = YamlConfig("color")
 cfg.read_config()
 color.read_config()
 
-screen = Screen(cfg.data, color.data, args.player)
+screen = Screen(cfg.data, color.data, "human")
 
 connection_data = None
 attempt_count = 0
@@ -54,7 +33,7 @@ while screen.game_running and connection_data is None:
         game_is_running = False
         break
 
-    connection_data = establish_client_connection(cfg, args.player, screen.nameId)
+    connection_data = establish_client_connection(cfg, "human", screen.nameId)
 
     if connection_data is None:
         time.sleep(2)
@@ -64,7 +43,7 @@ while screen.game_running and connection_data is None:
 if connection_data:
     client_socket, client_id, initial_data, timestamp = connection_data
 
-    screen.setup_player_specifics(client_id, timestamp, args.source)
+    screen.setup_player_specifics(client_id, timestamp, None)
 
     received_objects = initial_data["objects"]
     current_cycle_id = received_objects.get("cycle_id", 0)
