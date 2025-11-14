@@ -24,8 +24,6 @@ class OPENROUNTER_API:
         self.client = OpenAI(base_url=self.base_url, api_key=self.api_key)
 
     def _encode_image(self, image_path: str) -> str:
-        print("###########", image_path)
-
         with open(image_path, "rb") as image_file:
             base64_image = base64.b64encode(image_file.read()).decode("utf-8")
 
@@ -60,7 +58,8 @@ class OPENROUNTER_API:
         if image_path is not None:
             image_data_url = self._encode_image(image_path)
 
-        try:
+        # try:
+        if True:
             if image_path is not None:
                 messages = self.message_image(text_prompt, image_data_url)
             else:
@@ -75,15 +74,7 @@ class OPENROUNTER_API:
 
             return json.loads(request.choices[0].message.content)
 
-        except FileNotFoundError:
-            return f"Erro: Arquivo de imagem não encontrado em {image_path}"
-        except Exception as e:
-            return f"Ocorreu um erro: {e}"
-
-    # 🚨 IMPORTANTE:
-    # Você DEVE usar um modelo que suporte visão (multimodal).
-    # Modelos de texto puro (como gpt-3.5-turbo) não funcionarão.
-    # Exemplos para OpenRouter:
-    # - "openai/gpt-4o"
-    # - "anthropic/claude-3-sonnet"
-    # - "google/gemini-pro-vision"
+        # except FileNotFoundError:
+        #    return f"Erro: Arquivo de imagem não encontrado em {image_path}"
+        # except Exception as e:
+        #    return f"Ocorreu um erro: {e}"

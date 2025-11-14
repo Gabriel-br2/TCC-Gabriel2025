@@ -185,6 +185,8 @@ def handle_client_connection(conn, player_id):
 
             nature = init_client_date.get("nature")
             nameID = init_client_date.get("name")
+            if nature == "LLM":
+                nameID = "LLM"
 
             logging.info(f"Client {player_id} identified as {nature} is {nameID}.")
             logger.log_player(player_id, nameID)

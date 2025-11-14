@@ -1,4 +1,5 @@
 import pygame
+
 from LLM.agent import *
 from players.motion import *
 from utils.colision import *
@@ -22,31 +23,6 @@ class LLM_PLAYER:
         interpretation = self.Thinker.think("data")
         command = self.Player.play(interpretation)
 
-        print("COMANDO RECEBIDO:", command)
-
-        obj = my_objects[command["object_id"]]
-
-        okay = False
-        if command["action"] == "move":
-            okay = move_object(obj, command["dx"], command["dy"], my_objects)
-
-        elif command["action"] == "rotate":
-            rotate_object(obj)
-            okay = True
-
-        positions = {}
-        for i in other_objects:
-            positions[f"player {i.id} objects"] = i.position
-        for k in my_objects:
-            positions["my objects"] = i.position
-
-        self.Thinker.memory_save(
-            self, self.turn_counter, positions, interpretation, command
-        )
-        self.Player.memory_save(
-            self, self.turn_counter, positions, interpretation, command
-        )
-
         self.logger.log_turn(
             self.turn_counter,
             self.Thinker.name,
@@ -62,4 +38,42 @@ class LLM_PLAYER:
             command,
         )
 
+        for key, value in command.items():
+            if isinstance(value, list):
+                try:
+                    i = int(value[0])
+                except ValueError:
+                    i = value[0]
+                except TypeError:
+                    i = value[0]
+
+                command[key] = i
+
+        print("INTERPREATAÇÂO RECEBIDA:", interpretation)
+        print("COMANDO RECEBIDO:", command)
+
+        obj = my_objects[command["object_id"]]
+        okay = False
+
+        if command["action"] == "move":
+            okay = move_object(obj, command["dx"], command["dy"], my_objects)
+
+        elif command["action"] == "rotate":
+            rotate_object(obj)
+            okay = True
+
+        positions = {}
+        for i in other_objects:
+            positions[f"player {i.id} objects"] = i.position
+        for k in my_objects:
+            positions[f"my objects as player {k.id}"] = k.position
+
+        self.Thinker.memory_save(
+            self.turn_counter, positions, interpretation, command, score
+        )
+        self.Player.memory_save(
+            self.turn_counter, positions, interpretation, command, score
+        )
+
+        print()
         return okay

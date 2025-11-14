@@ -1,9 +1,28 @@
 import datetime
 import json
 import os
+import re
 import time
 
 from utils.plotter import plot_grid
+
+
+def payload_to_dict(payload_str):
+    pattern = r"<(?P<key>\w+)>\s*(?P<value>.*?)\s*</(?P=key)>"
+
+    matches = re.finditer(pattern, payload_str, re.DOTALL)
+
+    result_dict = {}
+    for match in matches:
+        key = match.group("key")
+        value = match.group("value").strip()
+
+        try:
+            result_dict[key] = json.loads(value)
+        except json.JSONDecodeError:
+            result_dict[key] = value
+
+    return result_dict
 
 
 class Logger_LLM:
@@ -14,6 +33,9 @@ class Logger_LLM:
         log_LLM = os.path.join(log_base_folder, "LLM_interaction")
         os.makedirs(log_LLM, exist_ok=True)
         self.log_file_path = os.path.join(log_LLM, f"player_{client_id}_log.json")
+        self.log_file_llm_metadata = os.path.join(
+            log_LLM, f"player_{client_id}_data.json"
+        )
 
         self.client_id = client_id
         self.log_data = {"turns": {}}
@@ -28,20 +50,23 @@ class Logger_LLM:
                     "class": agent.__class__.__name__,
                     "llm_source": agent.llm_source,
                     "model": agent.model,
+                    "context": agent.context.split("\n"),
+                    "pattern": agent._json_pattern,
                 }
                 for agent in agents
             ],
         }
 
-        with open(self.log_file_path, "w", encoding="utf-8") as f:
+        with open(self.log_file_llm_metadata, "w", encoding="utf-8") as f:
             json_string = json.dumps(full_metadata, indent=4, ensure_ascii=False)
             f.write(json_string + "\n\n")
 
     def log_turn(
         self, turn_number: int, agent_name: str, payload: str, tag: str, response: dict
     ):
-        payload = payload.split(f"<{tag}>")[1].split(f"</{tag}>")[0].strip()
-        payload = payload.replace("\n", " ").replace("  ", " ")
+
+        payload = payload_to_dict(payload)
+        payload["context"] = payload["context"].split("\n")
 
         turn_key = f"turn_{turn_number}"
 
@@ -76,8 +101,8 @@ class Logger_data:
         self.last_progress_time = None
         self.last_progress_value = None
 
-    def log_player(self, ID, name):
-        full_data = {"id": ID, "color": self.color, "name": name}
+    def log_player(self, ID, name="LLM"):
+        full_data = {"id": ID, "color": self.color[ID], "name": name}
 
         with open(self.log_nature_path, "a", encoding="utf-8") as f:
             json_string = json.dumps(full_data, ensure_ascii=False)

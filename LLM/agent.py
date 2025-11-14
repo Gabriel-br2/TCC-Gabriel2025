@@ -3,40 +3,61 @@ from LLM.source.LLM_base import Base_Agent
 
 class Agent_Thinker(Base_Agent):
     def __init__(self, llm_source="local"):
-        self.tag = "current_turn"
+        self.tag = "current_turn_data"
         super().__init__(
             agent_name="THINKER",
             llm_source=llm_source,
-            model="meta-llama/llama-3.2-90b-vision-instruct",
+            model="deepseek/deepseek-r1-0528-qwen3-8b:free",
         )
 
     def _set_initial_context(self):
-        self.context = """Analyze the provided image and generate a JSON with the following fields:
-                        - last actions: a list of the consequences of the actions you took in the previous turns
-                        - position: coordinates or bounding box of the relevant object in the image (x, y, width, height)
-                        - interpretation: textual description of what you see in the image
-                        - action_hint: an indication of how to achieve a specific goal related to the object in the image
+        self.context = """
+            You are an Agent participating in a collective environment.
+            Context:
+            - You are in a collaborative game with 3 other agents (Humans or LLMs).
+            - Goal: Find a hidden specific configuration (pose: x, y, rz) for the objects.
+            - Communication: Strictly non-verbal (movement only).
 
-                        return only the JSON, without further explanation."""
+            Your Cognitive Architecture (Mandatory Process):
+            1. Social Learning:
+            - Attention: Focus on specific movements of other players.
+            - Retention: Formulate a hypothesis/rule based on the group's history.
+            - Motivation: Decide if you are exploring (seeking info) or exploiting (showing info).
+
+            2. Theory of Mind (ToM):
+            - Infer the beliefs and intents of other players. Do they know the goal? Are they confused?.
+
+            Analyze the provided game state data and generate a JSON plan as in the pattern.
+            """
 
     def _get_return_json_pattern(self) -> dict:
         root = dict()
-        root["last actions"] = (
-            "A list of the consequences of the actions you take in the previous turns.",
+
+        root["attention_focus"] = (
+            "Describe which piece movement caught your attention in the last rounds and why.",
         )
-        root["position"] = (
-            "Your detailed analysis of agent positions in the previous turn, including movement deltas.",
+
+        root["theory_of_mind_inference"] = (
+            "Your inference about the other players' mental states.",
         )
-        root["interpretation"] = (
-            "Your detailed analysis of what happened in previous turns: actions, results, and learnings.",
+
+        root["retention_hypothesis"] = (
+            "The current rule or pattern you have encoded in memory about the hidden goal.",
         )
-        root["action_hint"] = (
-            "Your detailed analysis of what should happen in the next turns: suggested actions and expected results."
+
+        # root["motivation_drive"] = (
+        #    "Why are you acting? Options: 'imitation' (copying others), 'demonstration' (teaching others), or 'exploration' (testing hypothesis).",
+        # )
+
+        root["intended_outcome"] = (
+            "A high-level description of what you want to achieve physically to fulfill your motivation."
         )
+
+        return root
 
     def think(self, current_turn_data: dict):
         self.generate_payload(msg=current_turn_data, msg_tag=self.tag)
-        response = self.request("screendata/last.jpg")
+        response = self.request()  # "screendata/last.jpg")
 
         return response
 
@@ -46,37 +67,48 @@ class Agent_Thinker(Base_Agent):
 
 class Agent_Player(Base_Agent):
     def __init__(self, llm_source="local"):
-        self.tag = "Thinker"
+        self.tag = "Thinker interpretation from actual turn"
         super().__init__(
-            agent_name="PLAYER", llm_source=llm_source, model="openai/gpt-oss-20b:free"
+            agent_name="PLAYER",
+            llm_source=llm_source,
+            model="deepseek/deepseek-r1-0528-qwen3-8b:free",
         )
 
     def _set_initial_context(self):
-        self.context = """Your task is to analyze the user's Game interpretation and generate a SINGLE JSON object representing ONE action.
-                          You must choose ONLY ONE of the two possible actions: 'move' or 'rotate'. Never return both.
+        self.context = (
+            self.context
+        ) = """
+            You are the player agent.
+            Your task is to execute the game movement based on the cognitive plan provided by the agent Thinker.
 
-                          1.  If the appropriate action is a movement, use this structure for exemple:
-                              {'action': 'move', 'object_id': 0, 'dx': 10, 'dy': -5}
+            The game mechanics have strict constraints:
+            1. MOVEMENT: You can move the object in X and Y axes (dx, dy).
+            2. ROTATION: You can ONLY rotate the object by exactly +90 degrees (clockwise).
+            - You CANNOT choose arbitrary angles (like 45 or 30).
+            - A single 'rotate' action equals +90 degrees.
 
-                          2.  If the appropriate action is a rotation, use this structure for exemple:
-                              {'action': 'rotate', 'object_id': 0}
+            You must choose ONE action ('move' or 'rotate') that best aligns with the 'intended_outcome' requested by the Thinker.
 
-                          Analyze the interpretation below and return only the single JSON object for the correct action."""
+            Analyze the game plan and generate a JSON command exactly as in the pattern.
+            """
 
     def _get_return_json_pattern(self) -> dict:
         root = dict()
-        root["action"] = (
-            "The action to be performed. The value must be EXACTLY 'move' or 'rotate'.",
+
+        root["reasoning"] = (
+            "Briefly explain why this specific move or rotation helps achieve the Thinker's goal.",
         )
-        root["object_id"] = (
-            "The numeric (integer) ID of the game object to be affected.",
+        root["object_id"] = ("A single integer ID of the piece you are manipulating.",)
+        root["action"] = (
+            "The physical action type. Must be EXACTLY 'move' or 'rotate'.",
         )
         root["dx"] = (
-            "USED ONLY IF the action is 'move'. Represents the delta change in the horizontal position in pixels then you can make big moves(X-axis).",
+            "REQUIRED ONLY IF action is 'move'. Represents the delta change in X pixels.",
         )
         root["dy"] = (
-            "USED ONLY IF the action is 'move'. Represents the delta change in the vertical position in pixels then you can make big moves(Y-axis)."
+            "REQUIRED ONLY IF action is 'move'. Represents the delta change in Y pixels.",
         )
+        return root
 
     def play(self, thinker_analysis: dict):
         self.generate_payload(msg=thinker_analysis, msg_tag=self.tag)
