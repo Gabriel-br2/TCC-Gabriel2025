@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import base64
 import json
-import mimetypes
 import os
 
 from dotenv import load_dotenv
@@ -13,7 +12,7 @@ class OPENROUNTER_API:
         load_dotenv()
 
         self.base_url = os.getenv("BASE_URL")
-        self.api_key = os.getenv("API_KEY")
+        self.api_key = os.getenv("API_KEY_GUERRA")
         self.model = model
 
         if not self.base_url or not self.api_key:

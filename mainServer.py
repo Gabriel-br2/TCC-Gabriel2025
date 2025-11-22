@@ -61,15 +61,23 @@ logger.log_metadata(cfg.data)
 
 def place_object(obj_type, existing_positions, max_attempts=100):
     model_vertices = modelsClass[obj_type]
+
     for _ in range(max_attempts):
         x, y = random.randint(0, screen_width), random.randint(0, screen_height)
         rotation = random.choice([0, 90, 180, 270])
+
         transformed = apply_transformation(x, y, rotation, model_vertices)
         aabb = get_axis_aligned_bounding_box(transformed)
+        min_x, min_y, max_x, max_y = aabb
+
+        if min_x < 0 or min_y < 0 or max_x > screen_width or max_y > screen_height:
+            continue
+
         if not any(
             aabbs_intersect(aabb, other_aabb) for *_, other_aabb in existing_positions
         ):
             return [x, y, rotation, obj_type, aabb]
+
     return None
 
 
@@ -186,7 +194,7 @@ def handle_client_connection(conn, player_id):
             nature = init_client_date.get("nature")
             nameID = init_client_date.get("name")
             if nature == "LLM":
-                nameID = "LLM"
+                nameID = f"{nameID}_LLM"
 
             logging.info(f"Client {player_id} identified as {nature} is {nameID}.")
             logger.log_player(player_id, nameID)

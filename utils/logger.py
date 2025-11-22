@@ -8,7 +8,7 @@ from utils.plotter import plot_grid
 
 
 def payload_to_dict(payload_str):
-    pattern = r"<(?P<key>\w+)>\s*(?P<value>.*?)\s*</(?P=key)>"
+    pattern = r"<(?P<key>[^>]+)>\s*(?P<value>.*?)\s*</(?P=key)>"
 
     matches = re.finditer(pattern, payload_str, re.DOTALL)
 
@@ -16,6 +16,9 @@ def payload_to_dict(payload_str):
     for match in matches:
         key = match.group("key")
         value = match.group("value").strip()
+
+        if key == "context":
+            continue
 
         try:
             result_dict[key] = json.loads(value)
@@ -66,7 +69,6 @@ class Logger_LLM:
     ):
 
         payload = payload_to_dict(payload)
-        payload["context"] = payload["context"].split("\n")
 
         turn_key = f"turn_{turn_number}"
 

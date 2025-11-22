@@ -1,28 +1,58 @@
 from LLM.source.LLM_base import Base_Agent
 
+colors = ["blue", "pink", "yellow", "cyan"]
+
 
 class Agent_Thinker(Base_Agent):
-    def __init__(self, llm_source="local"):
-        self.tag = "current_turn_data"
+    def __init__(self, iam, llm_source="local", memory_path=None):
+        self.tag = "current turn data"
+        self.iam = iam
+
         super().__init__(
             agent_name="THINKER",
             llm_source=llm_source,
-            model="deepseek/deepseek-r1-0528-qwen3-8b:free",
+            model="openai/gpt-4.1-nano",
+            memory_path=memory_path,
         )
 
     def _set_initial_context(self):
-        self.context = """
-            You are an Agent participating in a collective environment.
+        self.context = f"""
             Context:
-            - You are in a collaborative game with 3 other agents (Humans or LLMs).
-            - Goal: Find a hidden specific configuration (pose: x, y, rz) for the objects.
-            - Communication: Strictly non-verbal (movement only).
+            - You are in a collaborative environment with 3 other agents (Humans or LLMs).
+            - Goal: Find a hidden objective, only moving the pose (x, y, rz) of your objects.
+            - Your Control: You are agent {colors[self.iam]}, You control all objects of this color. The other agents control the other colors.
+            - Score: A global score (0-100%) indicates how close ALL agents are to the hidden objective. Higher is better.
+            - Collaboration: You must collaborate with other agents to maximize the global score.
 
-            Your Cognitive Architecture (Mandatory Process):
+            INPUT:
+            - Image (Current State): The provided image shows the current game state. It displays all objects for all players and the current score.
+            - Object ID: The image contains each of your objects labeled with a unique ID (e.g., 1, 2...). You must use this ID to specify which object you want to move.
+            - Memory (Historical Data): You will receive a memory (history) containing position and score data from previous rounds. Use this information to inform your strategy.
+            - You will receive the actual information about the game with a JSON object with the following data:
+                * "actual score"`: The current global score (0-100%).
+                * "actual position"`: A nested JSON object with the positions of all objects for all other players, and your objects in the format:
+                    'player id objects':
+                            'object_obj_id (x,y)': [(x1, y1), (x2, y2), ...]
+                        "my objects as player id':
+                            "object_obj_id (x,y)": [(x1, y1), (x2, y2), ...]
+
+            GAME_RULES AND CONSTRAINTS:
+            1. Movement Constraints:
+               - You can only move your objects by changing their pose (x, y, rz).
+               - You only can rotate objects by +90 degrees (clockwise).
+               - You cannot move objects controlled by other agents.
+            2. Score Dynamics:
+               - The global score reflects the collective progress of all agents towards the hidden objective.
+
+            OUTPUT, Your Cognitive Architecture (Mandatory Process):
             1. Social Learning:
             - Attention: Focus on specific movements of other players.
             - Retention: Formulate a hypothesis/rule based on the group's history.
-            - Motivation: Decide if you are exploring (seeking info) or exploiting (showing info).
+            - Motivation: Reward driven by the Global Score (0-100%):
+                a) Positive reward when d(Score)/dt > 0 (Score increases), the action was good. Negative reward when Score drops, the action was bad.
+                b) Causal Attribution: You **MUST** attribute the Delta_Score (change in score) to the correct agent. If **YOUR** move
+                was demonstrably minimal or non-positional in the result data, yet the score increased significantly, you must conclude
+                that the gain was primarily **caused by a successful positioning/movement by one or more collaborating agents**.
 
             2. Theory of Mind (ToM):
             - Infer the beliefs and intents of other players. Do they know the goal? Are they confused?.
@@ -34,30 +64,29 @@ class Agent_Thinker(Base_Agent):
         root = dict()
 
         root["attention_focus"] = (
-            "Describe which piece movement caught your attention in the last rounds and why.",
+            "Identify which specific movement (by you or others) caused the most significant change in the score during the last steps."
         )
 
         root["theory_of_mind_inference"] = (
-            "Your inference about the other players' mental states.",
+            "Infer the intent of other players: Are they 'Hill-Climbing' (optimizing correctly), 'Exploring' (randomly moving), or 'Confused'?"
         )
 
         root["retention_hypothesis"] = (
-            "The current rule or pattern you have encoded in memory about the hidden goal.",
+            "Your current best estimate of the target configuration (x, y, rz) based on previous high-score moments."
         )
 
-        # root["motivation_drive"] = (
-        #    "Why are you acting? Options: 'imitation' (copying others), 'demonstration' (teaching others), or 'exploration' (testing hypothesis).",
-        # )
+        root["motivation_drive"] = (
+            "Analyze the score gradient (dScore/dt). Decide whether to 'Exploit' (refine position due to rising score) or 'Explore' (change strategy due to stagnation)."
+        )
 
         root["intended_outcome"] = (
-            "A high-level description of what you want to achieve physically to fulfill your motivation."
+            "Describe the precise physical adjustment (e.g., 'Rotate +5 degrees', 'Stop moving') you intend to perform to validate your hypothesis."
         )
-
         return root
 
     def think(self, current_turn_data: dict):
         self.generate_payload(msg=current_turn_data, msg_tag=self.tag)
-        response = self.request()  # "screendata/last.jpg")
+        response = self.request("screendata/last.jpg")
 
         return response
 
@@ -66,23 +95,27 @@ class Agent_Thinker(Base_Agent):
 
 
 class Agent_Player(Base_Agent):
-    def __init__(self, llm_source="local"):
+    def __init__(self, iam, llm_source="local", memory_path=None):
         self.tag = "Thinker interpretation from actual turn"
         super().__init__(
             agent_name="PLAYER",
             llm_source=llm_source,
-            model="deepseek/deepseek-r1-0528-qwen3-8b:free",
+            model="openai/gpt-4.1-nano",
+            memory_path=memory_path,
         )
 
     def _set_initial_context(self):
         self.context = (
             self.context
-        ) = """
-            You are the player agent.
+        ) = f"""
             Your task is to execute the game movement based on the cognitive plan provided by the agent Thinker.
 
             The game mechanics have strict constraints:
             1. MOVEMENT: You can move the object in X and Y axes (dx, dy).
+            - Low values (1-5) result in invisible movement.
+            - You must generate SIGNIFICANT 'dx' and 'dy' values (e.g., between 100 and 500) to move the object effectively towards the target.
+            - Only use small values (<10) if precise fine-tuning is explicitly requested.
+
             2. ROTATION: You can ONLY rotate the object by exactly +90 degrees (clockwise).
             - You CANNOT choose arbitrary angles (like 45 or 30).
             - A single 'rotate' action equals +90 degrees.
@@ -112,5 +145,69 @@ class Agent_Player(Base_Agent):
 
     def play(self, thinker_analysis: dict):
         self.generate_payload(msg=thinker_analysis, msg_tag=self.tag)
+        response = self.request()
+        return response
+
+
+# --------------------------------------------------------------------------------------------
+
+
+class Agent_summary(Base_Agent):
+    def __init__(self, iam, llm_source="local"):
+        self.tag = "Resume"
+        super().__init__(
+            agent_name="RESUME",
+            llm_source=llm_source,
+            model="openai/gpt-4.1-nano",
+            memory=False,
+        )
+
+    def _set_initial_context(self):
+        self.context = (
+            self.context
+        ) = """YOU ARE A STRATEGIC SUMMARIZER AGENT. You will Receive a JSON object representing turns in an AI agent's decision-making process.
+            Your goal is to transform this raw turn data into a clear, concise, and high-level executive summary.
+
+            INPUT DATA CONTEXT
+            You will receive a JSON object representing previous turn's "memory". The keys have specific meanings:
+
+            * "previous positions"`: The state of the environment *before* the agent's action.
+            * "previous score"`: The evaluation score of the "previous positions".
+            * "interpretation from agent thinker"`: The agent's *thought process* and logical analysis. **This is the most important field for finding the rationale.**
+            * "movements from agent player"`: The specific action or decision the agent made based on its interpretation. **This is the key decision/conclusion.**
+            * "result positions"`: The state of the environment *after* the agent's action.
+            * "result score"`: The evaluation score of the "result positions".
+
+            SUMMARY GUIDELINES
+            1.  **Focus on Decision and Rationale:** The summary MUST clearly state the **action taken** (from `"movements from agent player"`) and the **primary reason** for it (synthesized from `"interpretation from agent thinker"`).
+            2.  **Quantify the Outcome:** Use `"previous score"` and `"result score"` to assess the impact of the move (e.g., "Score improved from 50% to 65%"). If `"result score"` is null, state that the outcome is pending.
+            3.  **Be High-Level:** Do not report the raw data from `"previous positions"` or `"result positions"`. Summarize the *meaning* of the move, not the move's data.
+            4.  **Language:** English.
+            5.  **Tone:** Professional, direct, and objective.
+
+            You must return ONLY a valid JSON object with the exact structure below. Do not add markdown (```json) or any text before or after the JSON object.
+            """
+
+    def _get_return_json_pattern(self) -> dict:
+        root = dict()
+
+        root["key_rationale"] = (
+            "A one-sentence summary of the reason or logical justification for the decision (from 'interpretation').",
+        )
+
+        root["decision_summary"] = (
+            "A one-sentence summary of the action taken (from 'movements').",
+        )
+
+        root["outcome_assessment"] = (
+            "A brief statement on the result, comparing 'previous score' and 'result score'. (e.g., 'Score improved from X to Y because of ...')",
+        )
+        return root
+
+    def summary(self, memory: dict):
+        print(
+            "========================================= summary called ========================================="
+        )
+        self.generate_payload(msg=memory, msg_tag=self.tag)
         response = self.request()
         return response

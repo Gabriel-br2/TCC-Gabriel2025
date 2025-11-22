@@ -47,11 +47,13 @@ class Shape:
             self.position[:-1], self.position[-1]
         )
 
-    def draw_label(self, player_id):
-        font = pygame.font.SysFont(None, 18)
-        text_surface = font.render(
-            f"{player_id}.{self.alpha[self.obj_id]}", True, (0, 0, 0)
-        )  # preto
+    def draw_label(self, _):
+        label_color = (
+            (0, 0, 0) if (sum(self.color) / 3) > (255 / 2) else (255, 255, 255)
+        )
+
+        font = pygame.font.SysFont(None, 36)
+        text_surface = font.render(f"{self.obj_id+1}", True, label_color)
 
         xs = [v[0] for v in self.transformed_vertices]
         ys = [v[1] for v in self.transformed_vertices]

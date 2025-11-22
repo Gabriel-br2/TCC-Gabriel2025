@@ -4,6 +4,7 @@ import threading
 import time
 
 import pygame
+
 from screen import Screen
 from utils.config import YamlConfig
 from utils.dinamic_import import plugins_import
@@ -33,11 +34,30 @@ parser.add_argument(
     choices=["api", "local"],
     help="LLM source (required if --player=LLM)",
 )
+parser.add_argument(
+    "--name",
+    type=str,
+    help="Specify name of the agent (required if --player=LLM)",
+)
+parser.add_argument(
+    "--memory",
+    type=str,
+    help="path for memory history for LLM agent (optional, default is None)",
+)
+
 args = parser.parse_args()
-if args.player == "LLM" and not args.source:
-    parser.error("The --source argument is required when --player is LLM.")
-if args.player == "human" and args.source:
-    parser.error("The --source argument is not valid when --player is human.")
+if args.player == "LLM":
+    if not args.source:
+        parser.error("The --source argument is required when --player is LLM.")
+    if not args.name:
+        parser.error("The --name argument is required when --player is LLM.")
+
+if args.player == "human":
+    if args.source:
+        parser.error("The --source argument is not valid when --player is human.")
+    if args.memory:
+        parser.error("The --memory argument is not valid when --player is human.")
+
 
 # --- Leitura de Configurações ---
 cfg = YamlConfig("config")
@@ -45,7 +65,7 @@ color = YamlConfig("color")
 cfg.read_config()
 color.read_config()
 
-screen = Screen(cfg.data, color.data, args.player)
+screen = Screen(cfg.data, color.data, args.player, args.name, args.memory)
 
 connection_data = None
 attempt_count = 0
