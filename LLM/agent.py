@@ -5,7 +5,7 @@ colors = ["blue", "pink", "yellow", "cyan"]
 
 class Agent_Thinker(Base_Agent):
     def __init__(self, iam, llm_source="local", memory_path=None):
-        self.tag = "current turn data"
+        self.tag = "current turn"
         self.iam = iam
 
         super().__init__(
@@ -18,31 +18,40 @@ class Agent_Thinker(Base_Agent):
     def _set_initial_context(self):
         self.context = f"""
             Context:
-            - You are in a collaborative environment with 3 other agents (Humans or LLMs).
-            - Goal: Find a hidden objective, only moving the pose (x, y, rz) of your objects.
+            - You are in a collaborative environment with 3 other agents.
+            - Goal: Find a hidden objective, only placing your objects (x, y, rz).
             - Your Control: You are agent {colors[self.iam]}, You control all objects of this color. The other agents control the other colors.
-            - Score: A global score (0-100%) indicates how close ALL agents are to the hidden objective. Higher is better.
-            - Collaboration: You must collaborate with other agents to maximize the global score.
+            - Score: A global score (0-100%) indicates how close ALL AGENTS are to the hidden objective. Higher is better.
+            - Collaboration: You MUST COLLABORATE with other agents to maximize the global score.
 
             INPUT:
             - Image (Current State): The provided image shows the current game state. It displays all objects for all players and the current score.
-            - Object ID: The image contains each of your objects labeled with a unique ID (e.g., 1, 2...). You must use this ID to specify which object you want to move.
+            - Object ID: The image contains each of your {colors[self.iam]} objects labeled with a unique ID (e.g., 1, 2...). You must use this ID to specify which object you want to move.
             - Memory (Historical Data): You will receive a memory (history) containing position and score data from previous rounds. Use this information to inform your strategy.
+            - If the memory is empty, it means this is the first turn.
+            - If the memory has 'objective reached' for any turn, it means the hidden objective was found in that turn.
+                - thins positions must be used to refine your strategy. specifically, analyze how the positions of all objects (yours and others) are correlated.
+
+
             - You will receive the actual information about the game with a JSON object with the following data:
                 * "actual score"`: The current global score (0-100%).
                 * "actual position"`: A nested JSON object with the positions of all objects for all other players, and your objects in the format:
-                    'player id objects':
-                            'object_obj_id (x,y)': [(x1, y1), (x2, y2), ...]
-                        "my objects as player id':
-                            "object_obj_id (x,y)": [(x1, y1), (x2, y2), ...]
+                    'p_[color]':
+                            'obj_[id] = ["type": shape, "pos": [x, y], "rot": rz]
+
+            where:
+            - 'Shape': indicates a token for the look alike geometric form of the object (e.g., 'I', 'L', 'T', etc.).
+            - 'x' and 'y': represent the object's coordinates on the 2D plane (in pixels).
+            - 'rz': indicates the rotation angle of the object around the z-axis (in degrees).
 
             GAME_RULES AND CONSTRAINTS:
             1. Movement Constraints:
-               - You can only move your objects by changing their pose (x, y, rz).
-               - You only can rotate objects by +90 degrees (clockwise).
-               - You cannot move objects controlled by other agents.
+               - You can only place your objects in between 0 to 500 in X and 0 to 500 in Y.
+               - The objects can rotate only +90 degrees (clockwise).
+               - You cannot change objects controlled by other agents.
             2. Score Dynamics:
-               - The global score reflects the collective progress of all agents towards the hidden objective.
+               - The global score reflects the collective progress of ALL agents towards the hidden objective, you must collaborate to maximize it.
+               - The other players objects positions are very important to determine your objects position .
 
             OUTPUT, Your Cognitive Architecture (Mandatory Process):
             1. Social Learning:
@@ -50,12 +59,13 @@ class Agent_Thinker(Base_Agent):
             - Retention: Formulate a hypothesis/rule based on the group's history.
             - Motivation: Reward driven by the Global Score (0-100%):
                 a) Positive reward when d(Score)/dt > 0 (Score increases), the action was good. Negative reward when Score drops, the action was bad.
-                b) Causal Attribution: You **MUST** attribute the Delta_Score (change in score) to the correct agent. If **YOUR** move
-                was demonstrably minimal or non-positional in the result data, yet the score increased significantly, you must conclude
-                that the gain was primarily **caused by a successful positioning/movement by one or more collaborating agents**.
+                b) Causal Attribution: You MUST attribute the change in score to the correct agent. If other agent move
+                and the result score increased significantly, you must conclude that the gain was primarily **caused by a successful positioning/movement by one or more collaborating agents.
+                c) Exploitation vs Exploration: If the score is rising, you should refine your position. If the score is stagnant or dropping, you should change your strategy.
+                d) Statistically, there's a high chance that the other players already know the objective.
 
             2. Theory of Mind (ToM):
-            - Infer the beliefs and intents of other players. Do they know the goal? Are they confused?.
+            - Infer the intent of other players: Are they optimizing correctly, Exploring the score?
 
             Analyze the provided game state data and generate a JSON plan as in the pattern.
             """
@@ -63,12 +73,16 @@ class Agent_Thinker(Base_Agent):
     def _get_return_json_pattern(self) -> dict:
         root = dict()
 
+        root["image_interpretation"] = (
+            "describe the key observations from the current game state image, focusing on the positions and orientations and intersection of all objects, especially those of other agents in reletion to yours.",
+        )
+
         root["attention_focus"] = (
-            "Identify which specific movement (by you or others) caused the most significant change in the score during the last steps."
+            "Identify which specific movement (by others) caused the most significant change in the score during the last steps."
         )
 
         root["theory_of_mind_inference"] = (
-            "Infer the intent of other players: Are they 'Hill-Climbing' (optimizing correctly), 'Exploring' (randomly moving), or 'Confused'?"
+            "Infer the intent of other players: Are they optimizing correctly, Exploring the score?"
         )
 
         root["retention_hypothesis"] = (
@@ -76,11 +90,11 @@ class Agent_Thinker(Base_Agent):
         )
 
         root["motivation_drive"] = (
-            "Analyze the score gradient (dScore/dt). Decide whether to 'Exploit' (refine position due to rising score) or 'Explore' (change strategy due to stagnation)."
+            "Analyze the score gradient (dScore/dt). Decide whether to go to position due to rising score or change strategy due to stagnation."
         )
 
         root["intended_outcome"] = (
-            "Describe the precise physical adjustment (e.g., 'Rotate +5 degrees', 'Stop moving') you intend to perform to validate your hypothesis."
+            "Describe the precise physical adjustment (e.g., 'Rotate', 'Stop moving') you intend to perform to validate your hypothesis."
         )
         return root
 
@@ -111,10 +125,8 @@ class Agent_Player(Base_Agent):
             Your task is to execute the game movement based on the cognitive plan provided by the agent Thinker.
 
             The game mechanics have strict constraints:
-            1. MOVEMENT: You can move the object in X and Y axes (dx, dy).
-            - Low values (1-5) result in invisible movement.
-            - You must generate SIGNIFICANT 'dx' and 'dy' values (e.g., between 100 and 500) to move the object effectively towards the target.
-            - Only use small values (<10) if precise fine-tuning is explicitly requested.
+            1. MOVEMENT: You can put a object in position X and Y.
+            - Low values result in invisible movement.
 
             2. ROTATION: You can ONLY rotate the object by exactly +90 degrees (clockwise).
             - You CANNOT choose arbitrary angles (like 45 or 30).
@@ -135,11 +147,11 @@ class Agent_Player(Base_Agent):
         root["action"] = (
             "The physical action type. Must be EXACTLY 'move' or 'rotate'.",
         )
-        root["dx"] = (
-            "REQUIRED ONLY IF action is 'move'. Represents the delta change in X pixels.",
+        root["x"] = (
+            "REQUIRED ONLY IF action is 'move'. Represents the X pixels position to change.",
         )
-        root["dy"] = (
-            "REQUIRED ONLY IF action is 'move'. Represents the delta change in Y pixels.",
+        root["y"] = (
+            "REQUIRED ONLY IF action is 'move'. Represents the Y pixels position to change.",
         )
         return root
 

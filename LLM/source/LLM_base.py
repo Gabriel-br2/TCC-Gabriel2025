@@ -20,6 +20,7 @@ class Base_Agent:
         self.context = ""
         self.model = model
         self.name = agent_name
+        self.last_score = 0
 
         self.source_CLASS = OPENROUNTER_API if llm_source == "api" else OLLAMA_APP
         self.source = self.source_CLASS(model)
@@ -34,9 +35,11 @@ class Base_Agent:
             turns = data["turns"]
             last = list(turns.keys())[-1]
             self.memory = turns[last][agent_name]["payload"]["memory"]
+            self.last_turn = int(list(self.memory.keys())[-1].split("_")[1])
 
         else:
             self.memory = {}
+            self.last_turn = 0
 
     def _set_initial_context(self):
         raise NotImplementedError("Subclasses must implement this method.")
@@ -46,15 +49,26 @@ class Base_Agent:
 
     def objective_reached(self, turn, score, positions):
         self.memory[f"turn_{turn}"] = {
-            "score": f"{score*100}%",
-            "result": "Objective reached",
+            "score": f"{score}%",
+            "result": "Objective reached, restarting the game.",
             "postions": positions,
         }
 
     def insert_score_data(self, turn, score):
         if self.memory is not None:
             if f"turn_{turn-1}" in self.memory:
-                self.memory[f"turn_{turn-1}"]["result score"] = f"{score*100}%"
+
+                if score > self.last_score:
+                    self.last_score = score
+                    self.memory[f"turn_{turn-1}"][
+                        "result score"
+                    ] = f"The increase score was good: {score*100}%"
+
+                else:
+                    self.last_score = score
+                    self.memory[f"turn_{turn-1}"][
+                        "result score"
+                    ] = f"The decrease score was bad: {score*100}%"
 
     def memory_save(self, turn, add_to_dict, Summary, new_memory):
         self.memory = add_to_dict(self.memory, f"turn_{turn}", new_memory, Summary)

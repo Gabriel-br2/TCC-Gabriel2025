@@ -22,17 +22,20 @@ def get_interpolation(dx, dy):
     return dx_l[1:], dy_l[1:], steps
 
 
-def move_object(my_obj, dx, dy, my_objects, cfg):
+def move_object(my_obj, dx, dy, my_objects, cfg, LLM=False):
+    start_x = my_obj.position[0]
+    start_y = my_obj.position[1]
+
+    if LLM:
+        dx = dx - start_x
+        dy = dy - start_y
+
     int_dx, int_dy, values = get_interpolation(dx, dy)
 
     if values == 0:
         return True
 
-    start_x = my_obj.position[0]
-    start_y = my_obj.position[1]
-
     okay = True
-
     for i in range(values):
         new_x = start_x + int_dx[i]
         new_y = start_y + int_dy[i]

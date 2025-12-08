@@ -6,6 +6,7 @@ class GenericShape(Shape):
         self, cfg, id="P9", obj_id=10, screen=None, color=None, initial_position=None
     ):
         self.id = int(str(id)[-1])
+        self.shape_name = "D"
 
         self.obj_id = obj_id
 

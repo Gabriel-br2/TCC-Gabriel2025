@@ -5,6 +5,8 @@ from players.motion import *
 from utils.colision import *
 from utils.logger import Logger_LLM
 
+colors = ["blue", "pink", "yellow", "cyan"]
+
 
 def add_key_value_as_first(dictionary, key_to_add, value_to_add):
     new_ordered_dict = {key_to_add: value_to_add}
@@ -25,7 +27,7 @@ def add_to_dict(dictionary, key, value, summaryse):
 
     if len(dictionary) >= 5:
         excluded = {}
-        for i in range(3):
+        for _ in range(3):
             k = list(dictionary.keys())[0]
             v = list(dictionary.values())[0]
             excluded[k] = v
@@ -46,14 +48,17 @@ class LLM_PLAYER:
         self.Player = Agent_Player(client_id, source, memory_path)
         self.Summary = Agent_summary(client_id, source)
 
+        self.turn_counter = self.Thinker.last_turn
+
         self.logger = Logger_LLM(timestamp, client_id)
         self.logger.log_metadata([self.Thinker, self.Player])
-        self.turn_counter = 0
         self.cfg = cfg
 
+        self.client_id = client_id
         self.other_objects = None
         self.my_objects = None
         self.score = None
+        self.last_position = None
 
     def objective_reached(self):
         d = self.score if self.score is not None and self.score >= 95 else 95
@@ -61,30 +66,27 @@ class LLM_PLAYER:
 
         self.Thinker.objective_reached(self.turn_counter, d, positions)
         self.Player.objective_reached(self.turn_counter, d, positions)
-        self.turn_counter = 0
+        # self.turn_counter = 0
 
-    def plot_objects(self, other_objects, my_objects):
-        positions = {}
+    def plot_objects(self, other_objects, my_objects, delta_calc=False):
+        position = {}
+
         for i in other_objects:
-            if f"player {i.id} objects" not in positions:
-                positions[f"player {i.id} objects"] = {}
+            if True:  # self.client_id != i.id:
+                if f"player_{colors[i.id].upper()}" not in position:
+                    position[f"player_{colors[i.id].upper()}"] = {}
 
-            p1, p2, a = i.position
-            points = i.get_transformed_position((p1, p2), a)
-            positions[f"player {i.id} objects"][f"object_{i.obj_id} (x,y)"] = points
+                shape = i.shape_name
+                p1, p2, a = i.position
+                a = a % 360
 
-        for k in my_objects:
-            if f"my objects as player {k.id}" not in positions:
-                positions[f"my objects as player {k.id}"] = {}
+                position[f"player_{colors[i.id].upper()}"][f"object_{i.obj_id}"] = {
+                    "type": shape,
+                    "pos": [p1, p2],
+                    "rot": a,
+                }
 
-            p1, p2, a = k.position
-            points = k.get_transformed_position((p1, p2), a)
-
-            positions[f"my objects as player {k.id}"][
-                f"object_{k.obj_id} (x,y)"
-            ] = points
-
-        return positions
+        return position
 
     def LLMInteraction(self, other_objects, my_objects, score):
         self.other_objects = other_objects
@@ -98,7 +100,7 @@ class LLM_PLAYER:
         previous_positions = self.plot_objects(other_objects, my_objects)
 
         interpretation = self.Thinker.think(
-            {"actual score": score, "actual position": previous_positions}
+            {"actual score": score * 100, "actual position": previous_positions}
         )
         command = self.Player.play(interpretation)
 
@@ -109,6 +111,7 @@ class LLM_PLAYER:
             self.Thinker.tag,
             interpretation,
         )
+
         self.logger.log_turn(
             self.turn_counter,
             self.Player.name,
@@ -140,21 +143,21 @@ class LLM_PLAYER:
             okay = False
 
             if command["action"] == "move":
-                if command["dx"] in [None, "None", "Null", "null"]:
-                    command["dx"] = 0
+                if command["x"] in [None, "None", "Null", "null"]:
+                    command["x"] = 0
 
-                if command["dy"] in [None, "None", "Null", "null"]:
-                    command["dy"] = 0
+                if command["y"] in [None, "None", "Null", "null"]:
+                    command["y"] = 0
 
                 okay = move_object(
-                    obj, command["dx"], command["dy"], my_objects, self.cfg
+                    obj, command["x"], command["y"], my_objects, self.cfg, True
                 )
 
             elif command["action"] == "rotate":
                 rotate_object(obj)
                 okay = True
 
-            positions = self.plot_objects(other_objects, my_objects)
+            positions = self.plot_objects(other_objects, my_objects, True)
 
             new_memory = {
                 "previous positions": previous_positions,

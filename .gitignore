@@ -133,3 +133,4 @@ TCC/
 TCC_server/
 testes/
 .venv_path
+screendata/

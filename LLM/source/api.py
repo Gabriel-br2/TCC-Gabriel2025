@@ -67,9 +67,16 @@ class OPENROUNTER_API:
             request = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                max_tokens=1024,
+                max_tokens=3000,
                 response_format={"type": "json_object"},
             )
+
+            usage = request.usage
+            print(f"--- Relatório de Tokens ---")
+            print(f"Entrada (Prompt + Imagem): {usage.prompt_tokens}")
+            print(f"Saída (Resposta do Modelo): {usage.completion_tokens}")
+            print(f"Total: {usage.total_tokens}")
+            print(f"---------------------------")
 
             return json.loads(request.choices[0].message.content)
 
