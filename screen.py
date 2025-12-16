@@ -3,12 +3,10 @@ import threading
 import webbrowser
 
 import pygame
-
 from players.human import humanInteraction
 
-
 class Screen:
-    def __init__(self, config, color, player_type):
+    def __init__(self, config, color, player_type, name=None, memory_path=None):
         pygame.init()
 
         self.config = config
@@ -20,6 +18,7 @@ class Screen:
         self.lock = True
         self.menu_running = True
         self.game_running = True
+        self.memory_path = memory_path
 
         self.width = config["screen"]["width"]
         self.height = config["screen"]["height"]
@@ -31,9 +30,10 @@ class Screen:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(config["screen"]["caption"])
 
-        self.nameId = None
-        if self.player_type == "human":
-            self.nameId = self.initial_screen()
+        self.nameId = name
+        if self.nameId is None:
+            if self.player_type == "human":
+                self.nameId = self.initial_screen()
 
     def initial_screen(self):
         nome = ""
@@ -255,22 +255,29 @@ class Screen:
                 if event.type == pygame.QUIT:
                     self.game_running = False
                     return
-                humanInteraction(event, objects, local_objects)
+                humanInteraction(event, objects, local_objects, self.config)
 
         def LLM_events():
             if not os.path.exists("screendata"):
                 os.makedirs("screendata")
 
-            for obj in local_objects + objects:
+            while any([obj for obj in local_objects + objects if obj.isRotating]):
+                pass
+
+            print("Contemplating LLM move...")
+            for obj in local_objects:
                 obj.draw_label(obj.id)
+
             pygame.image.save(self.screen, "screendata/last.jpg")
-            for obj in local_objects + objects:
+
+            for obj in local_objects:
                 obj.clear_label()
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.game_running = False
                     return
+
             self.LLM.LLMInteraction(objects, local_objects, self.iou)
             self.lock = True
 

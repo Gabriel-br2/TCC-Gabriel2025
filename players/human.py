@@ -1,9 +1,10 @@
 import pygame
+
 from players.motion import *
 from utils.colision import point_in_polygon
 
 
-def humanInteraction(event, objects, my_objects):
+def humanInteraction(event, objects, my_objects, cfg):
     if event.type == pygame.MOUSEBUTTONDOWN:
         for my_obj in reversed(my_objects):
             if point_in_polygon(event.pos, my_obj.transformed_vertices):
@@ -27,4 +28,4 @@ def humanInteraction(event, objects, my_objects):
             if my_obj.dragging:
                 dx = (event.pos[0] + my_obj.offset_x) - my_obj.position[0]
                 dy = (event.pos[1] + my_obj.offset_y) - my_obj.position[1]
-                move_object(my_obj, dx, dy, my_objects)
+                move_object(my_obj, dx, dy, my_objects, cfg)

@@ -1,10 +1,10 @@
 screen:
   caption: Projeto de TCC - Gabriel
-  height: 900
-  width: 1200
+  height: 900 # 500
+  width: 1200 # 500
 
 game:
-  playerNum: 4
+  playerNum: 2
   playerTam: 10
   objectsNum: 2
   objectBaseSquareTam: 50

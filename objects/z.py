@@ -6,6 +6,7 @@ class ZShape(Shape):
         self, cfg, id="P9", obj_id=10, screen=None, color=None, initial_position=None
     ):
         self.id = int(str(id)[-1])
+        self.shape_name = "Z"
 
         self.obj_id = obj_id
 
