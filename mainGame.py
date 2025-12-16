@@ -156,7 +156,7 @@ if connection_data:
             c += 1
             update_payload = screen.game_loop(shapes, iou)
 
-            if c == 1 or (c % 75) == 0:
+            if c == 1 or (c % 25) == 0:
                 if update_payload:
                     send_new_position(client_socket, update_payload, current_cycle_id)
 
