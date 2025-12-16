@@ -12,8 +12,8 @@ game:
 
 server:
   showMonitor: True
-  ip: localhost
-  port: 8000
+  ip: 179.189.133.252   #localhost  #ip publico: 179.189.133.252 - porta externo: 7997 porta interna 8000
+  port: 7997
 
 scenario:
   scenario: 1
