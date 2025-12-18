@@ -1,7 +1,17 @@
 import os
+import sys
 from datetime import datetime
 
 import yaml
+
+# https://stackoverflow.com/questions/31836104/pyinstaller-and-onefile-how-to-include-an-image-in-the-exe-file
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 
 class YamlConfig:
@@ -32,36 +42,14 @@ class YamlConfig:
         )  # Load default config or empty dict if not found
 
     def read_config(self):
-        if not os.path.exists(self.config_dir):
-            os.makedirs(self.config_dir)
+        #if not os.path.exists(self.config_dir):
+        #    os.makedirs(self.config_dir)
 
-        config_path = os.path.join(self.config_dir, f"{self.config_type}.yaml")
+        config_path = resource_path(os.path.join(self.config_dir, f"{self.config_type}.yaml"))
 
-        if os.path.isfile(config_path):
-            with open(config_path) as yaml_file:
-                print(f"Loading from: {config_path}")
-                self.data = yaml.load(yaml_file, Loader=yaml.SafeLoader)
-        else:
-            print(f"No existing {self.config_type} file found. Using default settings.")
-            self.save_config()
-
-    def save_config(self):
-        config_path = os.path.join(self.config_dir, f"{self.config_type}.yaml")
-        with open(config_path, "w") as yaml_file:
-            yaml.dump(self.data, yaml_file)
-
-    def backup_and_update_config(self):
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        backup_path = os.path.join(
-            self.config_dir, f"{self.config_type}_{timestamp}.yaml"
-        )
-
-        original_path = os.path.join(self.config_dir, f"{self.config_type}.yaml")
-        if os.path.exists(original_path):
-            os.rename(original_path, backup_path)
-
-        self.save_config()
-
+        with open(config_path) as yaml_file:
+            print(f"Loading from: {config_path}")
+            self.data = yaml.load(yaml_file, Loader=yaml.SafeLoader)
 
 if __name__ == "__main__":
     config = YamlConfig("config")

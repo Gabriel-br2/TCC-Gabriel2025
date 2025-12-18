@@ -6,7 +6,7 @@ import time
 import pygame
 from screen import Screen
 from utils.config import YamlConfig
-from utils.dinamic_import import plugins_import
+from dinamic_import import plugins_import
 from utils.network import establish_client_connection
 from utils.network import receive_new_position
 from utils.network import send_new_position
@@ -23,6 +23,9 @@ cfg = YamlConfig("config")
 color = YamlConfig("color")
 cfg.read_config()
 color.read_config()
+
+shape_classes = plugins_import("objects")
+print(shape_classes)
 
 screen = Screen(cfg.data, color.data, "human")
 
