@@ -1,0 +1,45 @@
+{
+    "session_start_timestamp": 5211.429080361,
+    "date": "23_12_20_36_17",
+    "screen": {
+        "caption": "Projeto de TCC - Gabriel",
+        "height": 650,
+        "width": 900
+    },
+    "game": {
+        "playerNum": 4,
+        "playerTam": 10,
+        "objectsNum": 2,
+        "objectBaseSquareTam": 50,
+        "transparency": 50
+    },
+    "server": {
+        "showMonitor": true,
+        "ip": "localhost",
+        "port": 8000
+    },
+    "scenario": {
+        "scenario": 1,
+        "c_1": [
+            "human",
+            "human",
+            "human"
+        ],
+        "c_2": [
+            "human",
+            "LLM",
+            "human"
+        ],
+        "c_3": [
+            "LLM",
+            "human",
+            "LLM"
+        ],
+        "c_4": [
+            "LLM",
+            "LLM",
+            "LLM"
+        ]
+    }
+}
+

@@ -1,0 +1,121 @@
+{
+    "session_start_time": "2026-01-03T19:59:56.269547",
+    "id": 3,
+    "agent_configs": [
+        {
+            "name": "THINKER",
+            "class": "Agent_Thinker",
+            "llm_source": "api",
+            "model": "openai/gpt-4.1-nano",
+            "context": [
+                "",
+                "            Context:",
+                "            - You are in a collaborative environment with 3 other agents.",
+                "            - Goal: Find a hidden objective, only placing your objects (x, y, rz).",
+                "            - Your Control: You are agent cyan, You control all objects of this color. The other agents control the other colors.",
+                "            - Score: A global score (0-100%) indicates how close ALL AGENTS are to the hidden objective. Higher is better, 100% is the goal.",
+                "            - Collaboration: You MUST COLLABORATE with other agents to maximize the global score.",
+                "",
+                "            INPUT:",
+                "            - Image (Current State): The provided image shows the current game state. It displays all objects for all players and the current score.",
+                "            - Object ID: The image contains each of your cyan objects labeled with a unique ID (e.g., 1, 2...). You must use this ID to specify which object you want to move.",
+                "            - Memory (Historical Data): You will receive a memory (history) containing position and score data from previous rounds. Use this information to inform your strategy.",
+                "            - If the memory is empty, it means this is the first turn.",
+                "            - If the memory has 'objective reached' for any turn, it means the hidden objective was found in that turn.",
+                "                - this positions must be used to refine your strategy. specifically, analyze how the positions of all objects (yours and others) are correlated.",
+                "",
+                "",
+                "            - You will receive the actual information about the game with a JSON object with the following data:",
+                "                * \"actual score\"`: The current global score (0-100%).",
+                "                * \"actual position\"`: A nested JSON object with the positions of all objects for all other players, and your objects in the format:",
+                "                    'p_[color]':",
+                "                            'obj_[id] = [\"type\": shape, \"pos\": [x, y], \"rot\": rz]",
+                "",
+                "            where:",
+                "            - 'Shape': indicates a token for the look alike geometric form of the object (e.g., 'I', 'L', 'T', etc.).",
+                "            - 'x' and 'y': represent the object's coordinates on the 2D plane (in pixels).",
+                "            - 'rz': indicates the rotation angle of the object around the z-axis (in degrees).",
+                "",
+                "            GAME_RULES AND CONSTRAINTS:",
+                "            1. Movement Constraints:",
+                "               - You can only place your objects in between 0 to 500 in X and 0 to 500 in Y.",
+                "               - The objects can rotate only +90 degrees (clockwise).",
+                "               - You cannot change objects controlled by other agents.",
+                "            2. Score Dynamics:",
+                "               - The global score reflects the collective progress of ALL agents towards the hidden objective, you must collaborate to maximize it.",
+                "               - The other players objects positions are very important to determine your objects position .",
+                "",
+                "            OUTPUT, Your Cognitive Architecture (Mandatory Process):",
+                "            1. Social Learning:",
+                "            - Attention: Focus on specific movements of other players.",
+                "            - Retention: Formulate a hypothesis/rule based on the group's history.",
+                "            - Motivation: Reward driven by the Global Score (0-100%):",
+                "                a) Causal Attribution: You MUST attribute the change in score to the correct agent. If other agent move",
+                "                and the result score change significantly, you must conclude that the change was primarily **caused by a positioning/movement by one or more collaborating agents.",
+                "                b) Statistically, there's a high chance that the other players already know the objective.",
+                "            c) If the score is very high and you still do not know the objective, you must focus on exploring the same positions as other players to refine your strategy.",
+                "            d) If you know the objective (reached 100% at any point), you must focus on achieving the same result that led to the objective, making slight adjustments to optimize collaboration.",
+                "            e) DURING THE GAME, THERE IS NO FIXED POSITION FOR THE OBJECTIVE. THE OBJECTIVE'S POSITION CHANGES AS AGENTS MOVE BECAUSE IT DEPENDS ON COLLABORATION. THEREFORE, YOU MUST USE INFORMATION FROM OTHER PLAYERS TO ADJUST YOUR STRATEGY.    ",
+                "",
+                "            2. Theory of Mind (ToM):",
+                "            - Infer the intent of other players: Are they optimizing correctly, Exploring the score?",
+                "",
+                "            Analyze the provided game state data and generate a JSON plan as in the pattern.",
+                "            "
+            ],
+            "pattern": {
+                "image_interpretation": [
+                    "describe the key observations from the current game state image, focusing on the positions and orientations and intersection of all objects, especially those of other agents in reletion to yours."
+                ],
+                "attention_focus": "Identify which specific movement (by others) caused the most significant change in the score during the last steps.",
+                "theory_of_mind_inference": "Infer the intent of other players: Are they optimizing correctly, Exploring the score?",
+                "retention_hypothesis": "Your current best estimate of the successful joint configuration (x, y, rz) derived from previous high-score moments.",
+                "motivation_drive": "Analyze the score gradient (dScore/dt). Decide whether to go to position due to rising score or change strategy due to stagnation."
+            }
+        },
+        {
+            "name": "PLAYER",
+            "class": "Agent_Player",
+            "llm_source": "api",
+            "model": "openai/gpt-4.1-nano",
+            "context": [
+                "",
+                "            Your task is to execute the game movement based on the cognitive plan provided by the agent Thinker.",
+                "",
+                "            The game mechanics have strict constraints:",
+                "            1. MOVEMENT: You can put a object in position X and Y.",
+                "            - e.g.: If you want to move an object to position (100, 200), simply set the X output to 100 and the Y output to 200.",
+                "            Use the current positions of the other agents' objects to determine the new X and Y values.",
+                "            - e.g: If the other agents' objects are in a especific position, consider moving your object to the same position using his numbers as a reference.",
+                "            nao fique repetindo os mesmos comandos",
+                "            ",
+                "",
+                "            2. ROTATION: You can ONLY rotate the object by exactly +90 degrees (clockwise).",
+                "            - You CANNOT choose arbitrary angles (like 45 or 30). A single 'rotate' action equals only in +90 degrees.",
+                "",
+                "            You must choose ONE action ('move' or 'rotate') that best aligns with the 'intended_outcome' requested by the Thinker.",
+                "",
+                "            Analyze the game plan and generate a JSON command exactly as in the pattern.",
+                "            "
+            ],
+            "pattern": {
+                "reasoning": [
+                    "Briefly explain why this specific move or rotation helps achieve the Thinker's goal."
+                ],
+                "object_id": [
+                    "A single integer ID of the piece you are manipulating. Use ONLY the integer ID from your color objects. do not put any other text."
+                ],
+                "action": [
+                    "The physical action type. Must be EXACTLY 'move' or 'rotate'."
+                ],
+                "x": [
+                    "REQUIRED ONLY IF action is 'move'. Represents the X position that you want the object to go."
+                ],
+                "y": [
+                    "REQUIRED ONLY IF action is 'move'. Represents the Y position that you want the object to go."
+                ]
+            }
+        }
+    ]
+}
+
