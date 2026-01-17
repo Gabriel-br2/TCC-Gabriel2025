@@ -157,8 +157,7 @@ Adjusting these files allows easy experimentation with game dynamics, user inter
 
 * **Gabriel Rocha de Souza** — Development, research, and documentation.
 * **Prof. Dr. Rodrigo da Silva Guerra** — Academic advisor.
-* **Prof. Dr. Marcelo Rita Pias** — Academic co-advisor.
-
+* 
 Affiliated with:
 **Federal University of Rio Grande (FURG)** — Center for Computational Sciences (C3), Automation Engineering.
 
