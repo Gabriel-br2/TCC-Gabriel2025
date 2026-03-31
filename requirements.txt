@@ -29,7 +29,7 @@ openai==2.8.0
 packaging==25.0
 pandas==2.3.3
 pathspec==0.12.1
-pillow==12.0.0
+pillow==12.1.1
 platformdirs==4.5.0
 pre_commit==4.3.0
 pydantic==2.12.4
