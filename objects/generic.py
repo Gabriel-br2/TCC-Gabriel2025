@@ -1,4 +1,4 @@
-from objects._shape._shape_ import Shape
+from objects._shape.shape import Shape
 
 
 class GenericShape(Shape):

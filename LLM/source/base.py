@@ -1,11 +1,11 @@
 import json
 import os
 
-from LLM.source.api import OPENROUNTER_API
-from LLM.source.local import OLLAMA_APP
+from LLM.source.api import OpenRouterAPI
+from LLM.source.local import OllamaApp
 
 
-class Base_Agent:
+class BaseAgent:
     def __init__(
         self,
         agent_name: str,
@@ -22,8 +22,8 @@ class Base_Agent:
         self.name = agent_name
         self.last_score = 0
 
-        self.source_CLASS = OPENROUNTER_API if llm_source == "api" else OLLAMA_APP
-        self.source = self.source_CLASS(model)
+        self.source_class = OpenRouterAPI if llm_source == "api" else OllamaApp
+        self.source = self.source_class(model)
 
         self._set_initial_context()
         self._json_pattern = self._get_return_json_pattern()

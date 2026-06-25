@@ -1,9 +1,9 @@
-from LLM.source.LLM_base import Base_Agent
+from LLM.source.base import BaseAgent
 
 colors = ["blue", "pink", "yellow", "cyan"]
 
 
-class Agent_Thinker(Base_Agent):
+class AgentThinker(BaseAgent):
     def __init__(self, iam, llm_source="local", memory_path=None):
         self.tag = "current turn"
         self.iam = iam
@@ -108,7 +108,7 @@ class Agent_Thinker(Base_Agent):
 # --------------------------------------------------------------------------------------------
 
 
-class Agent_Player(Base_Agent):
+class AgentPlayer(BaseAgent):
     def __init__(self, iam, llm_source="local", memory_path=None):
         self.tag = "Thinker interpretation from actual turn"
         super().__init__(
@@ -119,9 +119,7 @@ class Agent_Player(Base_Agent):
         )
 
     def _set_initial_context(self):
-        self.context = (
-            self.context
-        ) = f"""
+        self.context = self.context = f"""
             Your task is to execute the game movement based on the cognitive plan provided by the agent Thinker.
 
             The game mechanics have strict constraints:
@@ -164,7 +162,7 @@ class Agent_Player(Base_Agent):
 # --------------------------------------------------------------------------------------------
 
 
-class Agent_summary(Base_Agent):
+class AgentSummary(BaseAgent):
     def __init__(self, iam, llm_source="local"):
         self.tag = "Resume"
         super().__init__(

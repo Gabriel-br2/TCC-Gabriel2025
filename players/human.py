@@ -1,10 +1,11 @@
 import pygame
 
-from players.motion import *
-from utils.colision import point_in_polygon
+from players.motion import move_object
+from players.motion import rotate_object
+from utils.collision import point_in_polygon
 
 
-def humanInteraction(event, objects, my_objects, cfg):
+def human_interaction(event, objects, my_objects, cfg):
     if event.type == pygame.MOUSEBUTTONDOWN:
         for my_obj in reversed(my_objects):
             if point_in_polygon(event.pos, my_obj.transformed_vertices):

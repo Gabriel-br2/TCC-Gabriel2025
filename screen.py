@@ -5,8 +5,8 @@ import webbrowser
 import pygame
 from dotenv import load_dotenv
 
-from players.human import humanInteraction
-from players.LLM import LLM_PLAYER
+from players.human import human_interaction
+from players.llm_player import LLMPlayer
 
 load_dotenv()
 URL = os.getenv("FORM_URL")
@@ -37,10 +37,10 @@ class Screen:
         self.screen = pygame.display.set_mode((self.width, self.height))
         pygame.display.set_caption(config["screen"]["caption"])
 
-        self.nameId = name
-        if self.nameId is None:
+        self.name_id = name
+        if self.name_id is None:
             if self.player_type == "human":
-                self.nameId = self.initial_screen()
+                self.name_id = self.initial_screen()
 
     def initial_screen(self):
         nome = ""
@@ -181,7 +181,7 @@ class Screen:
             f"{self.config['screen']['caption']} - player: {self.client_id}"
         )
         if self.player_type == "LLM":
-            self.LLM = LLM_PLAYER(
+            self.llm = LLMPlayer(
                 timestamp, client_id, self.config, LLM_source, self.memory_path
             )
 
@@ -219,7 +219,7 @@ class Screen:
 
     def change_screen(self):
         if self.player_type == "LLM":
-            self.LLM.objective_reached()
+            self.llm.objective_reached()
 
         large_font = pygame.font.SysFont("Arial", self.width // 35, bold=True)
         text_surface = large_font.render(
@@ -269,9 +269,9 @@ class Screen:
                 if event.type == pygame.QUIT:
                     self.game_running = False
                     return
-                humanInteraction(event, objects, local_objects, self.config)
+                human_interaction(event, objects, local_objects, self.config)
 
-        def LLM_events():
+        def llm_events():
             if not os.path.exists("screendata"):
                 os.makedirs("screendata")
 
@@ -292,7 +292,7 @@ class Screen:
                     self.game_running = False
                     return
 
-            self.LLM.LLMInteraction(objects, local_objects, self.iou)
+            self.llm.llm_interaction(objects, local_objects, self.iou)
             self.lock = True
 
         if self.player_type == "human":
@@ -301,7 +301,7 @@ class Screen:
         if self.player_type == "LLM":
             if self.lock:
                 self.lock = False
-                thread1 = threading.Thread(target=LLM_events)
+                thread1 = threading.Thread(target=llm_events)
                 thread1.start()
 
     # --- Renderização ---

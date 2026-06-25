@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 
-class OPENROUNTER_API:
+class OpenRouterAPI:
     def __init__(self, model):
         load_dotenv()
 

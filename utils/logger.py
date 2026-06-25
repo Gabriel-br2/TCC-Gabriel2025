@@ -28,7 +28,7 @@ def payload_to_dict(payload_str):
     return result_dict
 
 
-class Logger_LLM:
+class LoggerLLM:
     def __init__(self, timestamp, client_id, log_base_folder="LOGS"):
         log_base_folder = os.path.join(log_base_folder, f"{timestamp}")
         os.makedirs(log_base_folder, exist_ok=True)
@@ -87,7 +87,7 @@ class Logger_LLM:
             json.dump(self.log_data, f, indent=4, ensure_ascii=False)
 
 
-class Logger_data:
+class LoggerData:
     def __init__(self, timestamp, color, log_base_folder="LOGS"):
         log_base_folder = os.path.join(log_base_folder, f"{timestamp}")
         os.makedirs(log_base_folder, exist_ok=True)
@@ -156,5 +156,5 @@ class Logger_data:
             json_string = json.dumps(event_entry, ensure_ascii=False)
             f.write(json_string + "\n")
 
-    def processData(self):
+    def process_data(self):
         plot_grid(self.log_file_path)

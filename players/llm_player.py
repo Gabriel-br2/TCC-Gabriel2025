@@ -1,9 +1,9 @@
-import pygame
-
-from LLM.agent import *
-from players.motion import *
-from utils.colision import *
-from utils.logger import Logger_LLM
+from LLM.agent import AgentPlayer
+from LLM.agent import AgentSummary
+from LLM.agent import AgentThinker
+from players.motion import move_object
+from players.motion import rotate_object
+from utils.logger import LoggerLLM
 
 colors = ["blue", "pink", "yellow", "cyan"]
 
@@ -40,17 +40,17 @@ def add_to_dict(dictionary, key, value, summaryse):
     return dictionary
 
 
-class LLM_PLAYER:
+class LLMPlayer:
     def __init__(self, timestamp, client_id, cfg, source="local", memory_path=None):
         self.source = source
 
-        self.Thinker = Agent_Thinker(client_id, source, memory_path)
-        self.Player = Agent_Player(client_id, source, memory_path)
-        self.Summary = Agent_summary(client_id, source)
+        self.Thinker = AgentThinker(client_id, source, memory_path)
+        self.Player = AgentPlayer(client_id, source, memory_path)
+        self.Summary = AgentSummary(client_id, source)
 
         self.turn_counter = self.Thinker.last_turn
 
-        self.logger = Logger_LLM(timestamp, client_id)
+        self.logger = LoggerLLM(timestamp, client_id)
         self.logger.log_metadata([self.Thinker, self.Player])
         self.cfg = cfg
 
@@ -88,7 +88,7 @@ class LLM_PLAYER:
 
         return position
 
-    def LLMInteraction(self, other_objects, my_objects, score):
+    def llm_interaction(self, other_objects, my_objects, score):
         self.other_objects = other_objects
         self.my_objects = my_objects
         self.score = score

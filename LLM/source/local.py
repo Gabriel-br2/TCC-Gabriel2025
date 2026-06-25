@@ -4,7 +4,7 @@ import re
 import ollama
 
 
-class OLLAMA_APP:
+class OllamaApp:
     def __init__(self, model):
         self.model = model
 
