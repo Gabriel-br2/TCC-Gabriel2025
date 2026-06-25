@@ -9,7 +9,7 @@ import time
 from _thread import start_new_thread
 from threading import Lock
 
-from screenServer import ScreenMonitor
+from screen_server import ScreenMonitor
 from utils.colision import *
 from utils.config import YamlConfig
 from utils.dinamic_import import plugins_import
