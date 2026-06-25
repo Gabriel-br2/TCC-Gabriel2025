@@ -1,6 +1,6 @@
 import numpy as np
 
-from utils.colision import detect_polygon_intersection
+from utils.collision import detect_polygon_intersection
 
 
 def dist(x, y):
@@ -22,11 +22,11 @@ def get_interpolation(dx, dy):
     return dx_l[1:], dy_l[1:], steps
 
 
-def move_object(my_obj, dx, dy, my_objects, cfg, LLM=False):
+def move_object(my_obj, dx, dy, my_objects, cfg, is_llm=False):
     start_x = my_obj.position[0]
     start_y = my_obj.position[1]
 
-    if LLM:
+    if is_llm:
         dx = dx - start_x
         dy = dy - start_y
 

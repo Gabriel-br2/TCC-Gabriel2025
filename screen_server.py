@@ -1,7 +1,3 @@
-import os
-import threading
-import webbrowser
-
 import pygame
 
 
