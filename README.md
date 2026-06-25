@@ -23,8 +23,8 @@ Key dynamics:
 ```
 
 TCC-Gabriel2025-main/
-├── mainGame.py               # Game client main file
-├── mainServer.py             # Server main file
+├── main_game.py               # Game client main file
+├── main_server.py             # Server main file
 ├── screen.py                 # Rendering utilities
 ├── teste.py                  # Test scripts
 ├── config/                   # Configuration files
@@ -94,13 +94,13 @@ pip install -r requirements.txt
 1. Start the **server**:
 
 ```bash
-python mainServer.py
+python main_server.py
 ```
 
 2. Start one or more **game clients** (in different terminals or machines):
 
 ```bash
-python mainGame.py
+python main_game.py
 ```
 
 Ensure all participants are connected to the same network or configured for remote access.
@@ -124,8 +124,8 @@ Adjusting these files allows easy experimentation with game dynamics, user inter
 
 - Ensure Python 3.x and Pygame are properly installed (`pip install -r requirements.txt`).
 - To start the system:
-  - Run `mainServer.py` on the host machine.
-  - Launch `mainGame.py` on each client machine.
+  - Run `main_server.py` on the host machine.
+  - Launch `main_game.py` on each client machine.
 
 **Important**: The system is designed for controlled experiments with human subjects and artificial agents. Ethical protocols must be followed.
 
@@ -135,7 +135,7 @@ Adjusting these files allows easy experimentation with game dynamics, user inter
 
 | Error              | Cause                   | Solution                                                 |
 | ------------------ | ----------------------- | -------------------------------------------------------- |
-| Connection refused | Server not running      | Ensure `mainServer.py` is running before clients connect |
+| Connection refused | Server not running      | Ensure `main_server.py` is running before clients connect |
 | Display issues     | Pygame not installed    | Run `pip install pygame`                                 |
 | YAML parsing error | Incorrect config syntax | Validate YAML files using online validators              |
 | Game crash on move | Invalid object state    | Ensure proper initialization of game objects             |
