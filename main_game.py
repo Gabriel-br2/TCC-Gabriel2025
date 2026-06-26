@@ -1,21 +1,13 @@
 #!/usr/bin/env python3
 import argparse
-import threading
 import time
 
-import pygame
-
+from objects import SHAPE_CLASSES
 from screen import Screen
 from utils.config import YamlConfig
-from utils.dinamic_import import plugins_import
-from utils.network import establish_client_connection
-from utils.network import receive_new_position
-from utils.network import send_new_position
-
+from utils.network import GameClient
 
 # --- Variáveis Globais ---
-latest_server_state = {}
-state_lock = threading.Lock()
 game_is_running = True
 current_cycle_id = 0
 
@@ -67,28 +59,29 @@ color.read_config()
 
 screen = Screen(cfg.data, color.data, args.player, args.name, args.memory)
 
-connection_data = None
+client = GameClient(cfg, args.player, screen.name_id)
+initial_data = None
 attempt_count = 0
-while screen.game_running and connection_data is None:
+while screen.game_running and initial_data is None:
     if not screen.show_waiting_screen(attempt_count):
         game_is_running = False
         break
 
-    connection_data = establish_client_connection(cfg, args.player, screen.nameId)
+    initial_data = client.connect()
 
-    if connection_data is None:
+    if initial_data is None:
         time.sleep(2)
 
     attempt_count += 1
 
-if connection_data:
-    client_socket, client_id, initial_data, timestamp = connection_data
+if initial_data:
+    client_id = client.client_id
+    timestamp = client.timestamp
 
     screen.setup_player_specifics(client_id, timestamp, args.source)
 
     received_objects = initial_data["objects"]
     current_cycle_id = received_objects.get("cycle_id", 0)
-    shape_classes = plugins_import("objects")
 
     def initialize_objects(objects_data):
         shapes = []
@@ -104,7 +97,7 @@ if connection_data:
 
             for count, obj in enumerate(value["pos"]):
                 shapes.append(
-                    shape_classes[obj[-1]](
+                    SHAPE_CLASSES[obj[-1]](
                         cfg,
                         int(player[1:]),
                         count,
@@ -115,41 +108,11 @@ if connection_data:
                 )
         return sorted(shapes, key=lambda s: (s.id != client_id, s.id, s.obj_id))
 
-    def network_listener(sock):
-        global latest_server_state, game_is_running
-
-        while game_is_running:
-            server_update = receive_new_position(sock)
-
-            # Caso 1: Timeout (Servidor quieto, esperando P2, etc.)
-            # Apenas ignore e tente ler de novo no próximo loop.
-            if server_update is None:
-                continue  # <-- Esta é a mudança principal
-
-            # Caso 2: Erro real (Desconexão, etc.)
-            # Agora verificamos se é um dict e se tem a chave "error"
-            if isinstance(server_update, dict) and "error" in server_update:
-                print(
-                    f"Erro na conexão com o servidor: {server_update['error']}. Encerrando o jogo."
-                )
-                game_is_running = False
-                break
-
-            # Caso 3: Dados válidos recebidos
-            # Se não for None e não for um erro, são dados do jogo.
-            with state_lock:
-                latest_server_state = server_update
-
     shapes = initialize_objects(received_objects)
     iou = received_objects.get("IoU", 0)
 
     def start_game():
-        global iou, shapes, latest_server_state, game_is_running, current_cycle_id
-
-        listener_thread = threading.Thread(
-            target=network_listener, args=(client_socket,), daemon=True
-        )
-        listener_thread.start()
+        global iou, shapes, game_is_running, current_cycle_id
 
         c = 0
         while screen.game_running and game_is_running:
@@ -158,13 +121,16 @@ if connection_data:
 
             if c == 1 or (c % 25) == 0:
                 if update_payload:
-                    send_new_position(client_socket, update_payload, current_cycle_id)
+                    client.send_position(update_payload, current_cycle_id)
 
-            current_update = None
-            with state_lock:
-                if latest_server_state:
-                    current_update = latest_server_state
-                    latest_server_state = {}
+            if client.error is not None:
+                print(
+                    f"Erro na conexão com o servidor: {client.error}. Encerrando o jogo."
+                )
+                game_is_running = False
+                break
+
+            current_update = client.get_state()
 
             if current_update:
                 is_reset = current_update.get("reset", False)
@@ -200,5 +166,6 @@ if connection_data:
     if __name__ == "__main__":
         start_game()
 
+client.close()
 screen.close()
 print("Programa encerrado.")
