@@ -116,7 +116,6 @@ __pypackages__/
 screendata/last.jpg
 screenshot/s
 sdist/
-server/
 share/python-wheels/
 #   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
 #   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.

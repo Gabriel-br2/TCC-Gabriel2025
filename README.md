@@ -22,40 +22,17 @@ Key dynamics:
 
 ```
 
-TCC-Gabriel2025-main/
-├── main_game.py              # Game client main file (asyncio websocket client)
-├── main_server.py            # Server main file (asyncio websocket server)
-├── screen.py                 # Client rendering / interaction
-├── screen_server.py          # Server-side monitor rendering
-├── config/                   # Configuration files
-│   ├── color.yaml            # Player color settings
-│   └── config.yaml           # Game parameters
-├── objects/                  # Game objects
-│   ├── __init__.py           # Explicit SHAPE_CLASSES registry
-│   ├── generic.py
-│   ├── hero.py
-│   ├── ricky.py
-│   ├── teewee.py
-│   ├── z.py
-│   └── _shape/
-│       └── shape.py
-├── players/                  # Players logic
-│   ├── human.py
-│   ├── llm_player.py
-│   └── motion.py
-├── LLM/                      # LLM agents and backends
-│   ├── agent.py
-│   └── source/
-│       ├── base.py
-│       ├── api.py
-│       └── local.py
-└── utils/                    # Utility modules
-    ├── collision.py
-    ├── config.py
-    ├── network.py            # Websocket GameClient
-    ├── logger.py
-    ├── objective.py
-    └── plotter.py
+TCC-Gabriel2025/
+├── main_game.py              # Client entry point (delegates to game.client)
+├── main_server.py            # Server entry point (delegates to game.server)
+├── config/                   # YAML configuration
+├── game/
+│   ├── shared/               # Config, protocol, shapes, collision, objective
+│   ├── server/               # WebSocket server, cycle generator, monitor, logging
+│   ├── client/               # Pygame UI, network client, player input
+│   ├── llm/                  # LLM agents and backends (prompt engineering)
+│   └── analysis/             # Post-session plotting
+└── scripts/                  # Local multi-player test helpers
 
 ````
 
