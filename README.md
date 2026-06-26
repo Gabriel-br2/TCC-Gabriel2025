@@ -23,27 +23,39 @@ Key dynamics:
 ```
 
 TCC-Gabriel2025-main/
-├── main_game.py               # Game client main file
-├── main_server.py             # Server main file
-├── screen.py                 # Rendering utilities
-├── teste.py                  # Test scripts
+├── main_game.py              # Game client main file (asyncio websocket client)
+├── main_server.py            # Server main file (asyncio websocket server)
+├── screen.py                 # Client rendering / interaction
+├── screen_server.py          # Server-side monitor rendering
 ├── config/                   # Configuration files
 │   ├── color.yaml            # Player color settings
 │   └── config.yaml           # Game parameters
 ├── objects/                  # Game objects
+│   ├── __init__.py           # Explicit SHAPE_CLASSES registry
 │   ├── generic.py
+│   ├── hero.py
+│   ├── ricky.py
 │   ├── teewee.py
-│   └── \_shape/
-│       └── *shape*.py
+│   ├── z.py
+│   └── _shape/
+│       └── shape.py
 ├── players/                  # Players logic
-│   └── human.py
-│   └── linguisticModel.py
-├── utils/                    # Utility modules
-│   ├── colision.py
-│   ├── config.py
-│   ├── network.py
-│   └── objective.py
-└── old/                      # Legacy code (version 1.0)
+│   ├── human.py
+│   ├── llm_player.py
+│   └── motion.py
+├── LLM/                      # LLM agents and backends
+│   ├── agent.py
+│   └── source/
+│       ├── base.py
+│       ├── api.py
+│       └── local.py
+└── utils/                    # Utility modules
+    ├── collision.py
+    ├── config.py
+    ├── network.py            # Websocket GameClient
+    ├── logger.py
+    ├── objective.py
+    └── plotter.py
 
 ````
 
@@ -63,6 +75,7 @@ There are **no dedicated hardware components** in this project. All interactions
 - Python 3.8+
 - Pygame
 - PyYAML
+- websockets
 
 All dependencies are listed in the `requirements.txt` file.
 
