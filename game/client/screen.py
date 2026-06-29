@@ -221,10 +221,18 @@ class Screen:
         if game_state.is_paused:
             if self.player_type == "LLM":
                 self.lock = True
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.game_running = False
+                    return
+            
+
             self._draw_pause_screen(
                 connected_players=game_state.connected_players,
                 total_players=game_state.total_players,
             )
+
             self.clock.tick(self.fps)
             return []
 
