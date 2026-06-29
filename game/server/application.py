@@ -179,7 +179,20 @@ class GameServer:
 
             await asyncio.sleep(CALC_INTERVAL_SEC)
 
-    def shutdown(self) -> None:
+    async def shutdown(self) -> None:
+        async with self.lock:
+            client_list_copy = list(self.clients.keys())
+ 
+        if client_list_copy:
+            shutdown_msg = json.dumps({"type": "shutdown"})
+            websockets.broadcast(client_list_copy, shutdown_msg)
+            await asyncio.sleep(0.1)
+            await asyncio.gather(
+                *[ws.close() for ws in client_list_copy],
+                return_exceptions=True,
+            )
+            logging.info(f"Shutdown sent to {len(client_list_copy)} client(s).")
+ 
         self._logger.process_data()
 
     async def run(self):

@@ -76,6 +76,10 @@ class ClientApplication:
 
             current_update = self._network.get_state()
             if current_update:
+                if current_update.get("type") == "shutdown":
+                    print("Servidor encerrado. Encerrando o jogo.")
+                    self._running = False
+                    break
                 self._game_state = self._apply_server_update(current_update)
 
         self._screen.end_screen()

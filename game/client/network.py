@@ -103,6 +103,9 @@ class GameClient:
             self._submit(
                 self._websocket.send(json.dumps(message)), timeout=SEND_TIMEOUT
             )
+        except websockets.ConnectionClosed as e:
+            print(f"Erro ao enviar posição: {e}")
+            self.error = e
         except Exception as error:  # noqa: BLE001
             print(f"Erro ao enviar posição: {error}")
 
