@@ -196,10 +196,21 @@ class GameServer:
         self._logger.process_data()
 
     async def run(self):
-        async with websockets.serve(
-            self.handler,
-            self._settings.server_bind_host,
-            self._settings.server_port,
-        ):
-            logging.info("Server started. Waiting for connections...")
-            await self.calc_loop()
+        try:
+            
+            async with websockets.serve(
+                self.handler,
+                self._settings.server_bind_host,
+                self._settings.server_port,
+            ):
+                logging.info("Server started. Waiting for connections...")
+                await self.calc_loop()
+        except OSError as error:
+            if error.errno == 98:
+                logging.error(
+                    f"Port {self._settings.server_port} is already in use. "
+                    f"use lsof -i :{self._settings.server_port} to find the process using it"
+                    "kill the process with kill -9 <PID> and try again."
+                )
+            else:
+                logging.error(f"Server encountered an OSError: {error}")
