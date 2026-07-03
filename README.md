@@ -38,25 +38,7 @@ TCC-Gabriel2025/
 
 ---
 
-## 🛠️ Hardware Interface
-
-There are **no dedicated hardware components** in this project. All interactions occur within the software environment, making the system fully platform-independent, requiring only:
-
-- A personal computer with internet access.
-- Python 3.x and required dependencies.
-
-## 📦 Dependencies and Installation
-
-### ✅ Required Dependencies
-
-- Python 3.8+
-- Pygame
-- PyYAML
-- websockets
-
-All dependencies are listed in the `requirements.txt` file.
-
-### ✅ Installing Dependencies
+## 📦 Installation
 
 First, clone the repository:
 
@@ -73,27 +55,52 @@ source venv/bin/activate   # On Linux/Mac
 venv\Scripts\activate      # On Windows
 ```
 
-Finally, install the required Python packages:
+Install the required Python packages:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### ✅ Running the System
+### Running the System
 
 1. Start the **server**:
 
 ```bash
-python main_server.py
+python3 server.py
 ```
 
 2. Start one or more **game clients** (in different terminals or machines):
 
 ```bash
-python main_game.py
+python3 client.py
 ```
 
-Ensure all participants are connected to the same network or configured for remote access.
+### Running Automatically
+
+For code debugging purposes, you can automatically launch the server and game clients with a single command.
+
+1. First, make the script executable (Linux/macOS):
+
+```bash
+chmod +x scripts/run_test_human.sh
+
+```
+
+2. Then, to run the system:
+
+**On Linux/macOS:**
+
+```bash
+./run_test_human.sh
+
+```
+
+**On Windows:**
+
+```powershell
+./run_test_human.ps1
+
+```
 
 ---
 
@@ -146,8 +153,9 @@ Adjusting these files allows easy experimentation with game dynamics, user inter
 ## 👥 Team
 
 * **Gabriel Rocha de Souza** — Development, research, and documentation.
+* **Matheus P. Silveira** — Development, code refactoring, implementation and professionalization. 
 * **Prof. Dr. Rodrigo da Silva Guerra** — Academic advisor.
-* 
+
 Affiliated with:
 **Federal University of Rio Grande (FURG)** — Center for Computational Sciences (C3), Automation Engineering.
 
@@ -155,13 +163,13 @@ Affiliated with:
 
 ## 🎓 Academic Context
 
-This project is developed as part of the **Bachelor's Thesis (TCC)** in **Automation Engineering** at the **Federal University of Rio Grande (FURG)**.
+This project is developed as part of Gabriel R. Souza **Bachelor's Thesis** in **Automation Engineering** at the **Federal University of Rio Grande (FURG)**.
 
 The experimental procedures involving human participants have been **officially approved by the Research Ethics Committee (Comitê de Ética em Pesquisa - CEP)** at FURG, ensuring compliance with all applicable ethical standards.
 
 The results and findings from this project will be:
 
-1. **Presented as the official Bachelor's Thesis (TCC)** for the completion of the Automation Engineering degree.
+1. **Presented as the official Bachelor's Thesis** for the completion of the Automation Engineering degree.
 2. **Subsequently converted into a scientific article** for broader dissemination and contribution to the academic community in the field of Artificial Intelligence, Human-Machine Interaction, and Social Learning Systems.
 
 ---
