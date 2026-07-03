@@ -10,7 +10,7 @@ def human_interaction(event, objects, my_objects, cfg):
         for my_obj in reversed(my_objects):
             if point_in_polygon(event.pos, my_obj.transformed_vertices):
                 if event.button == 3:  # botão direito → rotaciona
-                    rotate_object(my_obj)
+                    rotate_object(my_obj, my_objects, cfg)
 
                 if event.button == 1:  # botão esquerdo → inicia drag
                     my_obj.dragging = True

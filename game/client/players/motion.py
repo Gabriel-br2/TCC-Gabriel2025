@@ -35,7 +35,6 @@ def move_object(my_obj, dx, dy, my_objects, cfg, is_llm=False):
     if values == 0:
         return True
 
-    okay = True
     for i in range(values):
         new_x = start_x + int_dx[i]
         new_y = start_y + int_dy[i]
@@ -50,11 +49,8 @@ def move_object(my_obj, dx, dy, my_objects, cfg, is_llm=False):
                 or vertex_y < 0
                 or vertex_y > cfg["screen"]["height"]
             ):
-                okay = False
-                break
+                return False
 
-        if not okay:
-            break
 
         for other_my_obj in my_objects:
             if other_my_obj != my_obj:
@@ -62,17 +58,35 @@ def move_object(my_obj, dx, dy, my_objects, cfg, is_llm=False):
                     other_my_obj.position[:-1], other_my_obj.position[-1]
                 )
                 if detect_polygon_intersection(temp_new_pos, temp_other_pos):
-                    okay = False
-                    break
-
-        if not okay:
-            break
+                    return False
 
         my_obj.position[0] = int(new_x)
         my_obj.position[1] = int(new_y)
 
-    return okay
+    return True
 
 
-def rotate_object(my_obj):
+def rotate_object(my_obj, my_objects, cfg):
+    x, y, t = my_obj.position
+    dt = my_obj.get_transformed_position((x, y), t+90)
+    
+    for vertex_x, vertex_y in dt:
+        if (
+            vertex_x < 0
+            or vertex_x > cfg["screen"]["width"]
+            or vertex_y < 0
+            or vertex_y > cfg["screen"]["height"]
+        ):
+            return False
+
+    for other_my_obj in my_objects:
+        if other_my_obj != my_obj:
+            temp_other_pos = other_my_obj.get_transformed_position(
+                other_my_obj.position[:-1], other_my_obj.position[-1]
+            )
+            if detect_polygon_intersection(dt, temp_other_pos):
+                return False
+    
     my_obj.rotate()
+
+    return True
