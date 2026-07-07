@@ -37,6 +37,7 @@ class GameServer:
 
         self.cycle_id = 0
         self.clients: dict[Any, int] = {}
+        self._pending_clients: dict[Any, int] = {}
         self.lock = asyncio.Lock()
         self.monitor: ServerMonitor | None = None
         self.objects: dict = {}
@@ -50,7 +51,7 @@ class GameServer:
         self.objects, self.goal_area = self._cycle_generator.generate(self.cycle_id)
 
     def _allocate_player_id(self) -> int | None:
-        occupied = set(self.clients.values())
+        occupied = set(self.clients.values()) | set(self._pending_clients.values())
         for player_id in range(self._settings.num_players):
             if player_id not in occupied:
                 return player_id
@@ -62,7 +63,7 @@ class GameServer:
             if player_id is None:
                 await websocket.close()
                 return
-            self.clients[websocket] = player_id
+            self._pending_clients[websocket] = player_id
 
         logging.info(f"Connection established with {websocket.remote_address}")
 
@@ -75,6 +76,7 @@ class GameServer:
         finally:
             logging.info(f"Client {player_id} disconnected.")
             async with self.lock:
+                self._pending_clients.pop(websocket, None)
                 self.clients.pop(websocket, None)
 
     async def _serve_client(self, websocket, player_id: int):
@@ -90,6 +92,8 @@ class GameServer:
         self._logger.log_player(player_id, name_id)
 
         async with self.lock:
+            self._pending_clients.pop(websocket, None)
+            self.clients[websocket] = player_id
             initial_data = GameState(
                 objects=self.objects,
                 iou=self.objects.get("IoU", 0.0),
