@@ -41,6 +41,7 @@ class GameServer:
         self.monitor: ServerMonitor | None = None
         self.objects: dict = {}
         self.goal_area = 0.0
+        self.first_cycle = True
 
         self._start_new_cycle()
 
@@ -113,6 +114,7 @@ class GameServer:
             async with self.lock:
                 if update_cycle_id == self.cycle_id and player_key_name in self.objects:
                     self.objects[player_key_name]["pos"] = update["pos"]
+                    self.objects[player_key_name]["mouse"] = update.get("mouse", (0, 0))
 
     async def calc_loop(self):
         if self._monitor_factory is not None:
@@ -174,12 +176,17 @@ class GameServer:
                         )
 
                 if self.monitor is not None:
-                    if not self.monitor.render_frame(self.objects, progress):
+                    if not self.monitor.observe(self.objects, progress):
                         break
-
-            await asyncio.sleep(CALC_INTERVAL_SEC)
+                                
+            await asyncio.sleep(0.25 if self.first_cycle else CALC_INTERVAL_SEC)  
+            self.first_cycle = False 
 
     async def shutdown(self) -> None:
+        if self.monitor is not None:
+            self.monitor.close()
+
+
         async with self.lock:
             client_list_copy = list(self.clients.keys())
  

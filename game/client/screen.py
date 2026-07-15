@@ -225,7 +225,7 @@ class Screen:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.game_running = False
-                    return
+                    return [], (0, 0)
             
 
             self._draw_pause_screen(
@@ -234,7 +234,7 @@ class Screen:
             )
 
             self.clock.tick(self.fps)
-            return []
+            return [], (0, 0)
 
         local_player_objects = [
             obj for obj in game_state.objects if obj.id == self.client_id
@@ -244,8 +244,9 @@ class Screen:
         self._handle_events(game_state.objects, local_player_objects)
 
         self.clock.tick(self.fps)
+        mouse = pygame.mouse.get_pos()
 
-        return [[*obj.position, obj.type] for obj in local_player_objects]
+        return [ [[*obj.position, obj.type] for obj in local_player_objects], mouse]
 
     def change_screen(self):
         if self.player_type == "LLM":

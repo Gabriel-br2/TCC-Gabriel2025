@@ -97,8 +97,8 @@ class GameClient:
                 return state
         return None
 
-    def send_position(self, new_position, current_cycle_id):
-        message = {"pos": new_position, "cycle_id": current_cycle_id}
+    def send_position(self, new_position, current_cycle_id, mouse_position):
+        message = {"pos": new_position, "cycle_id": current_cycle_id, "mouse": mouse_position}
         try:
             self._submit(
                 self._websocket.send(json.dumps(message)), timeout=SEND_TIMEOUT

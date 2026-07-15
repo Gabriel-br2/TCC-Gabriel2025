@@ -57,14 +57,14 @@ class ClientApplication:
         tick = 24
         while self._screen.game_running and self._running:
             tick += 1
-            update_payload = self._screen.game_loop(self._game_state)
+            update_payload, mouse = self._screen.game_loop(self._game_state)
 
             if (
                 not self._game_state.is_paused
                 and tick % SEND_EVERY_N_FRAMES == 0
                 and update_payload
             ):
-                self._network.send_position(update_payload, self._game_state.cycle_id)
+                self._network.send_position(update_payload, self._game_state.cycle_id, mouse)
 
             if self._network.error is not None:
                 print(
