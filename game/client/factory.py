@@ -13,8 +13,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--player",
         type=str,
+        default="human",
         choices=["human", "LLM"],
-        required=True,
         help="Choose the type of player",
     )
     parser.add_argument(

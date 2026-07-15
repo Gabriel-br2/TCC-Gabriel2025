@@ -12,7 +12,7 @@ game:
 
 server:
   showMonitor: True
-  ip: localhost
+  ip: allowing-modern-dragon.ngrok-free.app
   port: 8000
 
 scenario:
