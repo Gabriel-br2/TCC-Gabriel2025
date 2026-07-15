@@ -1,4 +1,4 @@
-# Inicia o servidor e N clientes humanos conforme game.playerNum em config/config.yaml.
+# Inicia o servidor e N clientes humanos conforme game.playerNum em game/shared/config.py.
 # Uso: .\scripts\run_test_human.ps1
 # Feche as janelas dos clientes ou pressione Ctrl+C neste terminal para encerrar.
 
@@ -22,15 +22,13 @@ function Get-PythonExe {
 
 function Get-PlayerNum {
     $query = @'
-import yaml
-from pathlib import Path
+from game.shared.config import GAME_CONFIG
 
-data = yaml.safe_load(Path("config/config.yaml").read_text(encoding="utf-8"))
-print(data["game"]["playerNum"])
+print(GAME_CONFIG["game"]["playerNum"])
 '@
     $value = & $Python -c $query
     if ($value -notmatch '^\d+$' -or [int]$value -lt 1) {
-        throw "playerNum inválido em config/config.yaml: '$value'"
+        throw "playerNum inválido em game/shared/config.py: '$value'"
     }
     return [int]$value
 }
@@ -40,7 +38,7 @@ $PlayerNum = Get-PlayerNum
 $ServerProcess = $null
 
 try {
-    Write-Host "=== Teste: $PlayerNum jogador(es) humano(s) (config/config.yaml) ==="
+    Write-Host "=== Teste: $PlayerNum jogador(es) humano(s) (game/shared/config.py) ==="
 
     Write-Host "Iniciando servidor..."
     $ServerProcess = Start-Process -FilePath $Python `

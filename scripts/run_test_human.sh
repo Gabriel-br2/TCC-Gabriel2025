@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Inicia o servidor e N clientes humanos conforme game.playerNum em config/config.yaml.
+# Inicia o servidor e N clientes humanos conforme game.playerNum em game/shared/config.py.
 # Uso: ./scripts/run_test_human.sh
 # Encerre com Ctrl+C para parar o servidor e os clientes em background.
 
@@ -21,16 +21,14 @@ else
 fi
 
 PLAYER_NUM="$(python - <<'PY'
-import yaml
-from pathlib import Path
+from game.shared.config import GAME_CONFIG
 
-data = yaml.safe_load(Path("config/config.yaml").read_text(encoding="utf-8"))
-print(data["game"]["playerNum"])
+print(GAME_CONFIG["game"]["playerNum"])
 PY
 )"
 
 if ! [[ "$PLAYER_NUM" =~ ^[1-9][0-9]*$ ]]; then
-  echo "Erro: playerNum inválido em config/config.yaml: '$PLAYER_NUM'" >&2
+  echo "Erro: playerNum inválido em game/shared/config.py: '$PLAYER_NUM'" >&2
   exit 1
 fi
 
@@ -67,7 +65,7 @@ launch_client() {
   fi
 }
 
-echo "=== Teste: $PLAYER_NUM jogador(es) humano(s) (config/config.yaml) ==="
+echo "=== Teste: $PLAYER_NUM jogador(es) humano(s) (game/shared/config.py) ==="
 
 echo "Iniciando servidor..."
 python server.py &
