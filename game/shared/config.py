@@ -1,68 +1,68 @@
-import os
-from datetime import datetime
+from copy import deepcopy
 
-import yaml
+
+GAME_CONFIG = {
+    "screen": {
+        "caption": "Projeto de TCC - Gabriel",
+        "height": 900,
+        "width": 1200,
+    },
+    "game": {
+        "playerNum": 4,
+        "playerTam": 10,
+        "objectsNum": 2,
+        "objectBaseSquareTam": 50,
+        "transparency": 50,
+    },
+    "server": {
+        "showMonitor": True,
+        "ip": "allowing-modern-dragon.ngrok-free.app",
+        "port": 8000,
+    },
+    "scenario": {
+        "scenario": 1,
+        "c_1": ["human", "human", "human"],
+        "c_2": ["human", "LLM", "human"],
+        "c_3": ["LLM", "human", "LLM"],
+        "c_4": ["LLM", "LLM", "LLM"],
+    },
+}
+
+COLOR_CONFIG = {
+    "background": [255, 219, 187],
+    "blue": [0, 0, 255],
+    "pink": [255, 0, 155],
+    "yellow": [255, 255, 0],
+    "cyan": [0, 255, 255],
+    "magenta": [255, 0, 255],
+    "white": [255, 255, 255],
+    "black": [0, 0, 0],
+    "red": [255, 0, 0],
+    "green": [0, 255, 0],
+    "orange": [255, 165, 0],
+    "purple": [128, 0, 128],
+    "brown": [139, 69, 19],
+    "gray": [128, 128, 128],
+    "light_gray": [211, 211, 211],
+    "dark_gray": [64, 64, 64],
+    "navy": [0, 0, 128],
+    "teal": [0, 128, 128],
+    "lime": [50, 205, 50],
+    "gold": [255, 215, 0],
+    "beige": [245, 245, 220],
+    "coral": [255, 127, 80],
+    "turquoise": [64, 224, 208],
+    "violet": [238, 130, 238],
+    "indigo": [75, 0, 130],
+}
 
 
 class YamlConfig:
-    def __init__(self, config_type, config_dir="config"):
-        self.config_dir = os.path.expanduser(config_dir)
-        self.config_type = config_type
+    """In-memory config holder (kept name for existing call sites)."""
 
-        default_configs = {
-            "config": {
-                "screen": {
-                    "height": 600,
-                    "width": 800,
-                    "caption": "Experimento de Aprendizado Social",
-                }
-            },
-            "color": {
-                "background": [255, 255, 255],
-                "white": [255, 255, 255],
-                "red": [255, 0, 0],
-                "green": [0, 255, 0],
-                "blue": [0, 0, 255],
-            },
-        }
-
-        self.data = default_configs.get(config_type, {})
-
-    def read_config(self):
-        if not os.path.exists(self.config_dir):
-            os.makedirs(self.config_dir)
-
-        config_path = os.path.join(self.config_dir, f"{self.config_type}.yaml")
-
-        if os.path.isfile(config_path):
-            with open(config_path) as yaml_file:
-                print(f"Loading from: {config_path}")
-                self.data = yaml.load(yaml_file, Loader=yaml.SafeLoader)
-        else:
-            print(f"No existing {self.config_type} file found. Using default settings.")
-            self.save_config()
-
-    def save_config(self):
-        config_path = os.path.join(self.config_dir, f"{self.config_type}.yaml")
-        with open(config_path, "w") as yaml_file:
-            yaml.dump(self.data, yaml_file)
-
-    def backup_and_update_config(self):
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-        backup_path = os.path.join(
-            self.config_dir, f"{self.config_type}_{timestamp}.yaml"
-        )
-
-        original_path = os.path.join(self.config_dir, f"{self.config_type}.yaml")
-        if os.path.exists(original_path):
-            os.rename(original_path, backup_path)
-
-        self.save_config()
+    def __init__(self, data: dict):
+        self.data = data
 
 
-def load_game_configs(config_dir: str = "config") -> tuple[YamlConfig, YamlConfig]:
-    game_config = YamlConfig("config", config_dir)
-    color_config = YamlConfig("color", config_dir)
-    game_config.read_config()
-    color_config.read_config()
-    return game_config, color_config
+def load_game_configs() -> tuple[YamlConfig, YamlConfig]:
+    return YamlConfig(deepcopy(GAME_CONFIG)), YamlConfig(deepcopy(COLOR_CONFIG))
