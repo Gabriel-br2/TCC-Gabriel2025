@@ -6,6 +6,8 @@ import threading
 from typing import Optional
 
 import websockets
+import websockets.asyncio  # noqa: F401
+from websockets.exceptions import ConnectionClosed, WebSocketException
 
 from game.shared.settings import GameSettings
 
@@ -52,7 +54,7 @@ class GameClient:
         except (
             OSError,
             asyncio.TimeoutError,
-            websockets.WebSocketException,
+            WebSocketException,
             ValueError,
             json.JSONDecodeError,
         ) as error:
@@ -110,7 +112,7 @@ class GameClient:
 
                 with self._state_lock:
                     self._latest_state = update
-        except websockets.ConnectionClosed:
+        except ConnectionClosed:
             print("Servidor fechou a conexão.")
             self.error = "disconnected"
         except Exception as error:  # noqa: BLE001
@@ -131,7 +133,7 @@ class GameClient:
             self._submit(
                 self._websocket.send(json.dumps(message)), timeout=SEND_TIMEOUT
             )
-        except websockets.ConnectionClosed as e:
+        except ConnectionClosed as e:
             print(f"Erro ao enviar posição: {e}")
             self.error = e
         except Exception as error:  # noqa: BLE001

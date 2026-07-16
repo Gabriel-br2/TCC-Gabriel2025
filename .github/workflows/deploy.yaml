@@ -36,6 +36,8 @@ jobs:
           nuitka-version: main
           script-name: client.py
           mode: app
+          # websockets>=13 lazy-loads websockets.asyncio; Nuitka misses it otherwise
+          include-package: websockets
           nofollow-import-to: |
             game.analysis
             game.server
