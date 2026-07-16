@@ -9,7 +9,6 @@ on:
 jobs:
   build:
     strategy:
-      fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
 
@@ -37,9 +36,6 @@ jobs:
           nuitka-version: main
           script-name: client.py
           mode: app
-          output-file: client-human
-          include-data-dir: |
-            config=config
           nofollow-import-to: |
             game.analysis
             game.server
@@ -54,7 +50,7 @@ jobs:
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}-human Build
+          name: ${{ runner.os }} Build
           path: |
             build/*.exe
             build/*.bin
