@@ -1,14 +1,15 @@
 name: Nuitka Build
 
 on:
-    pull_request:
-        branches: [main]
-    push:
-        branches: [main]
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
 
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest, windows-latest]
 
@@ -21,15 +22,14 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12' # Version range or exact version of a Python version to use, using SemVer's version range syntax
-          architecture: 'x64' # optional x64 or x86. Defaults to x64 if not specified
+          python-version: '3.12'
+          architecture: 'x64'
           cache: 'pip'
           cache-dependency-path: |
             **/requirements*.txt
 
       - name: Install Dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements-client.txt
 
       - name: Build Executable
         uses: Nuitka/Nuitka-Action@main
@@ -37,12 +37,27 @@ jobs:
           nuitka-version: main
           script-name: client.py
           mode: app
+          output-file: client-human
+          include-data-dir: |
+            config=config
+          nofollow-import-to: |
+            game.analysis
+            game.server
+            game.llm
+            openai
+            ollama
+            matplotlib
+            pandas
+            seaborn
+            rerun
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }} Build
+          name: ${{ runner.os }}-human Build
           path: |
             build/*.exe
             build/*.bin
+            build/*.app
+            build/*.app/**/*
           include-hidden-files: true

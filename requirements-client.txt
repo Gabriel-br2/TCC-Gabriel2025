@@ -1,0 +1,6 @@
+# Client runtime (human + shared)
+pygame>=2.6.0
+numpy>=2.0.0
+websockets>=13.0
+shapely>=2.0.0
+python-dotenv>=1.0.0

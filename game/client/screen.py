@@ -6,7 +6,6 @@ import pygame
 from dotenv import load_dotenv
 
 from game.client.players.human import human_interaction
-from game.client.players.llm_player import LLMPlayer
 from game.client.ui.loading_spinner import LoadingSpinner
 from game.shared.game_state import GameState
 
@@ -189,6 +188,8 @@ class Screen:
             f"{self.config['screen']['caption']} - player: {self.client_id}"
         )
         if self.player_type == "LLM":
+            from game.client.players.llm_player import LLMPlayer
+
             self.llm = LLMPlayer(
                 timestamp, client_id, self.config, LLM_source, self.memory_path
             )
