@@ -10,8 +10,12 @@ from game.client.players.llm_player import LLMPlayer
 from game.client.ui.loading_spinner import LoadingSpinner
 from game.shared.game_state import GameState
 
+from game.llm.source.api import OpenRouterClient, Retry, SessionBudget, BudgetGuard
+
 load_dotenv()
+
 URL = os.getenv("FORM_URL")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 
 class Screen:
@@ -49,6 +53,8 @@ class Screen:
         if self.name_id is None:
             if self.player_type == "human":
                 self.name_id = self.initial_screen()
+
+        self.llm_budget = None
 
     def initial_screen(self):
         nome = ""
@@ -189,8 +195,37 @@ class Screen:
             f"{self.config['screen']['caption']} - player: {self.client_id}"
         )
         if self.player_type == "LLM":
+            llm_source = (
+                LLM_source if isinstance(LLM_source, str) and LLM_source else "local"
+            )
+
+            llm_cfg = self.config
+
+            base_client = OpenRouterClient(
+                api_key=llm_cfg.get("api_key", OPENROUTER_API_KEY),
+                title=llm_cfg.get("title", "game-agent"),
+            )
+            retry = Retry(base_client)
+
+            self.llm_budget = SessionBudget(
+                credit_limit=llm_cfg.get("credit_limit", 0.10)
+            )
+            guard = BudgetGuard(retry, self.llm_budget)
+
+            rules = llm_cfg.get(
+                "rules",
+               "You control objects on a 2D screen and must move or "
+                "rotate them to get closer to the game's objective."
+            )
+
             self.llm = LLMPlayer(
-                timestamp, client_id, self.config, LLM_source, self.memory_path
+                timestamp=timestamp,
+                client_id=client_id,
+                cfg=llm_cfg,
+                client=guard,
+                rules=rules,
+                source=llm_source,
+                budget=self.llm_budget,
             )
 
     def show_waiting_screen(self, attempt_count):
@@ -221,12 +256,11 @@ class Screen:
         if game_state.is_paused:
             if self.player_type == "LLM":
                 self.lock = True
-            
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.game_running = False
                     return [], (0, 0)
-            
 
             self._draw_pause_screen(
                 connected_players=game_state.connected_players,
@@ -389,4 +423,10 @@ class Screen:
 
     # --- Encerramento ---
     def close(self):
+        # O novo LLMPlayer mantém threads vivas (thinker/summarizer) rodando
+        # em background via GameOrchestrator; é preciso pará-las explicitamente
+        # ao fechar a tela, senão o processo pode não encerrar limpo.
+        if self.player_type == "LLM" and hasattr(self, "llm"):
+            self.llm.close()
+
         pygame.quit()

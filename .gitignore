@@ -136,3 +136,5 @@ screendata/
 venv
 .venv
 *.rrd
+*_old*
+results/

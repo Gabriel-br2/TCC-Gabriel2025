@@ -181,7 +181,7 @@ class ServerMonitor:
         screen_config: dict,
         color_palette: dict,
         models: dict,
-        save_path: str = "results/match.rrd",
+        save_path: str = "LOGS/matchs/match.rrd",
         log_hz: float = 30.0,
         queue_size: int = 4,
         render_scale: float = 0.5,

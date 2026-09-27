@@ -1,86 +1,320 @@
-#!/usr/bin/env python
-import base64
-import json
 import os
+import time
+import threading
+import pandas as pd
 
-from dotenv import load_dotenv
-from openai import OpenAI
+import requests
+from typing import Any, ClassVar
+from dataclasses import dataclass, field, asdict
+from abc import ABC, abstractmethod
+
+CSV_PATH = "LOGS/expenses.csv"
+
+class APIError(Exception):
+    pass
 
 
-class OpenRouterAPI:
-    def __init__(self, model):
-        load_dotenv()
+class BudgetExceededError(APIError):
+    pass
 
-        self.base_url = os.getenv("BASE_URL")
-        self.api_key = os.getenv("API_KEY_GUERRA")
-        self.model = model
 
-        if not self.base_url or not self.api_key:
-            raise OSError("BASE_URL e API_KEY devem estar definidos no .env")
-        if not self.model:
-            raise ValueError("O 'model' deve ser especificado.")
+class OpenRouterClient:
+    _instance = None
 
-        self.client = OpenAI(base_url=self.base_url, api_key=self.api_key)
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
 
-    def _encode_image(self, image_path: str) -> str:
-        with open(image_path, "rb") as image_file:
-            base64_image = base64.b64encode(image_file.read()).decode("utf-8")
+    def __init__(self,
+                 api_key: str | None = None,
+                 title:   str | None = None,
+                 base_url: str = "https://openrouter.ai/api",
+                 ):
 
-        return f"data:image/jpg;base64,{base64_image}"
+        if getattr(self, "_initialized", False):
+            return
 
-    def message_image(self, text_prompt, image_data_url):
-        msg = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": text_prompt},
-                    {"type": "image_url", "image_url": {"url": image_data_url}},
-                ],
-            }
-        ]
+        self.api_key  = api_key or os.environ.get("OPENROUTER_API_KEY")
+        self.title    = title or os.environ.get("TITLE")
+        self.base_url = base_url
+        
+        self.session = requests.Session()
+        self.session.headers.update({
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type" :  "application/json",
+        })
 
-        return msg
+        self._initialized = True
 
-    def message(self, text_prompt):
-        msg = [
-            {
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": text_prompt},
-                ],
-            }
-        ]
+    def post(self, endpoint: str, payload: dict) -> dict:
 
-        return msg
+        print("@@@@@@@@@@@@@@@@@@@", payload)
 
-    def request(self, text_prompt: str, image_path: str) -> str:
-        if image_path is not None:
-            image_data_url = self._encode_image(image_path)
+        url = f"{self.base_url}/{endpoint}"
+        response = self.session.post(url, json=payload, timeout=60)
+        response.raise_for_status()
+        return response.json()
 
-        # try:
-        if True:
-            if image_path is not None:
-                messages = self.message_image(text_prompt, image_data_url)
-            else:
-                messages = self.message(text_prompt)
+    def get(self, endpoint: str) -> dict:
+        url = f"{self.base_url}/{endpoint}"
+        response = self.session.get(url, timeout=60)
+        response.raise_for_status()
+        return response.json()
 
-            request = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                max_tokens=3000,
-                response_format={"type": "json_object"},
+
+class RequestBuilder:
+    def __init__(self, model: str):
+        self._payload = {"model": model, "messages": []}
+
+    def add_system(self, content: str) -> "RequestBuilder":
+        self._payload["messages"].append({"role": "system", "content": content})
+        return self
+
+    def add_user(self, content: str) -> "RequestBuilder":
+        self._payload["messages"].append({"role": "user", "content": content})
+        return self
+
+    def add_assistant(self, content: str) -> "RequestBuilder":
+        self._payload["messages"].append({"role": "assistant", "content": content})
+        return self
+
+    def temperature(self, value: float) -> "RequestBuilder":
+        self._payload["temperature"] = value
+        return self
+
+    def max_tokens(self, value: int) -> "RequestBuilder":
+        self._payload["max_tokens"] = value
+        return self
+
+    def track_usage(self) -> "RequestBuilder":
+        self._payload["usage"] = {"include": True}
+        return self
+
+    def build(self) -> dict:
+        return self._payload
+
+
+class Retry:
+    def __init__(self, client: OpenRouterClient, max_retries: int = 3, base_delay: float = 1.0):
+        self._client = client
+        self.title = client.title
+        self._max_retries = max_retries
+        self._base_delay = base_delay
+
+    def post(self, endpoint: str, payload: dict) -> dict:
+        last_error = None
+        for attempt in range(self._max_retries):
+            try:
+                return self._client.post(endpoint, payload)
+            except requests.exceptions.RequestException as exc:
+                last_error = exc
+                wait = self._base_delay * (2 ** attempt)
+                time.sleep(wait)
+        raise APIError(f"Failed after {self._max_retries} attempts: {last_error}") from last_error
+
+    def get(self, endpoint: str) -> dict:
+        last_error = None
+        for attempt in range(self._max_retries):
+            try:
+                return self._client.get(endpoint)
+            except requests.exceptions.RequestException as exc:
+                last_error = exc
+                wait = self._base_delay * (2 ** attempt)
+                time.sleep(wait)
+        raise APIError(f"Failed after {self._max_retries} attempts: {last_error}") from last_error
+
+
+class RequestFactory:
+    @staticmethod
+    def create(kind: str, **kwargs) -> dict:
+        if kind == "chat":
+            builder = RequestBuilder(kwargs["model"])
+            if "system" in kwargs:
+                builder.add_system(kwargs["system"])
+            builder.add_user(kwargs["prompt"])
+            builder.track_usage()
+            return builder.build()
+        else:   
+            raise ValueError(f"unknown request kind: {kind}") 
+
+
+class ResponseAdapter:
+    def __init__(self, raw_response: Any):
+        self._raw = raw_response
+
+    @property
+    def text(self) -> str:
+        return self._raw["choices"][0]["message"]["content"]
+
+    @property
+    def model_used(self) -> str:
+        return self._raw.get("model", "desconhecido")
+
+    @property
+    def tokens_used(self) -> int:
+        return self._raw.get("usage", {}).get("total_tokens", 0)
+
+    @property
+    def cost(self) -> float:
+        return self._raw.get("usage", {}).get("cost", 0.0) or 0.0
+
+
+class DecisionAdapter:
+
+    def __init__(self, raw: dict):
+        self._raw = raw
+
+    def _answer(self, question: str) -> dict:
+        try:
+            return self._raw["answers"][question]
+        except KeyError as exc:
+            raise APIError(
+                f"'{question}': {self._raw}"
+            ) from exc
+
+    def choice(self, question: str) -> str:
+        return self._answer(question)["choice"]
+
+    def confidence(self, question: str) -> float | None:
+        return self._answer(question).get("confidence")
+
+    def probabilities(self, question: str) -> dict[str, float]:
+        return self._answer(question).get("probabilities", {})
+
+    @property
+    def model_used(self) -> str:
+        return self._raw.get("model", "unknown")
+
+    @property
+    def cost(self) -> float:
+        return self._raw.get("usage", {}).get("cost", 0.0) or 0.0
+
+
+@dataclass
+class ExpenseRecord:
+    expense           : float
+    title             : str 
+    model             : str | None = None
+    prompt_tokens     : int | None = None
+    completion_tokens : int | None = None
+    date: str = field(default_factory=lambda: time.strftime("%Y-%m-%d %H:%M:%S"))
+    leftover: float | None = None
+
+    _current_leftover: ClassVar[float | None] = None
+    _lock: ClassVar[threading.Lock] = threading.Lock()
+
+    def __post_init__(self):
+        with ExpenseRecord._lock:
+            if ExpenseRecord._current_leftover is None:
+                raise RuntimeError("Call Expense 'startSession' before creating records.")
+            ExpenseRecord._current_leftover -= self.expense
+            self.leftover = ExpenseRecord._current_leftover
+            self._save()
+
+    @classmethod
+    def startSession(cls, budget: float):
+        with cls._lock:
+            cls._current_leftover = budget
+
+    def _save(self):
+        df = pd.DataFrame([asdict(self)])
+        existe = os.path.isfile(CSV_PATH)
+        df.to_csv(CSV_PATH, mode="a", header=not existe, index=False)
+
+
+class SessionBudget:
+    def __init__(self, credit_limit: float):
+        self.credit_limit = credit_limit
+        self.total_expenditure = 0.0
+        self.history: list[ExpenseRecord] = []
+        self._lock = threading.Lock()
+
+    def can_spend(self) -> bool:
+        with self._lock:
+            return self.total_expenditure < self.credit_limit
+
+    def register(self, expense: float, **details) -> None:
+        with self._lock:
+            self.total_expenditure += expense
+            self.history.append(ExpenseRecord(expense=expense, **details))
+
+    def leftover(self) -> float:
+        with self._lock:
+            return max(0.0, self.credit_limit - self.total_expenditure)
+
+    def summary(self) -> str:
+        with self._lock:
+            return (
+                f"Spent: {self.total_expenditure:.6f} / {self.credit_limit:.6f} credits "
+                f"({len(self.history)} calls, {max(0.0, self.credit_limit - self.total_expenditure):.6f} remaining)"
             )
 
-            usage = request.usage
-            print(f"--- Relatório de Tokens ---")
-            print(f"Entrada (Prompt + Imagem): {usage.prompt_tokens}")
-            print(f"Saída (Resposta do Modelo): {usage.completion_tokens}")
-            print(f"Total: {usage.total_tokens}")
-            print(f"---------------------------")
 
-            return json.loads(request.choices[0].message.content)
+class BudgetGuard:
+    def __init__(self, client, budget: SessionBudget):
+        self._client = client
+        self.budget = budget
 
-        # except FileNotFoundError:
-        #    return f"Erro: Arquivo de imagem não encontrado em {image_path}"
-        # except Exception as e:
-        #    return f"Ocorreu um erro: {e}"
+        info = self._client.get("v1/key")
+        budget_remaining = info.get("data",{}).get("limit_remaining",0)
+        
+        ExpenseRecord.startSession(budget_remaining)
+
+    def post(self, endpoint: str, payload: dict) -> dict:
+        if not self.budget.can_spend():
+            raise BudgetExceededError(
+                f"Limit of {self.budget.credit_limit} credits exceeded in this session. "
+                f"{self.budget.summary()}"
+            )
+
+        raw = self._client.post(endpoint, payload)
+
+        usage = raw.get("usage", {}) or {}
+        expense = usage.get("cost", 0.0) or 0.0
+        self.budget.register(
+            expense,
+            title=self._client.title or "unknown",
+            model=raw.get("model"),
+            prompt_tokens=usage.get("prompt_tokens"),
+            completion_tokens=usage.get("completion_tokens"),
+        )
+
+        return raw
+
+
+
+
+
+if __name__ == "__main__":
+    client = OpenRouterClient(
+                    api_key="key-here", 
+                    title="test"
+                  )
+    
+    retry  = Retry(client)
+
+    budget = SessionBudget(credit_limit=0.05)
+    guard  = BudgetGuard(retry, budget)
+
+    questions = [
+        "Resume the Singleton pattern in one sentence.",
+        "Resume the Observer pattern in one sentence.",
+    ]
+
+    for question in questions:
+        
+        payload = RequestFactory.create(
+            kind="chat",
+            model="openai/gpt-4o-mini",
+            prompt=question,
+        )
+        
+        try:
+            raw = guard.post("v1/chat/completions", payload)
+            response = ResponseAdapter(raw)
+            print(f"[{response.cost:.6f} credits] {response.text}")
+        
+        except BudgetExceededError as e:
+            print(f"Session interrupted: {e}")
+            break
