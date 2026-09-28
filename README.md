@@ -179,4 +179,54 @@ The participation of human subjects strictly adheres to ethical guidelines, ensu
 
 ---
 
+## Web client and operator panel
+
+The Python WebSocket game protocol is unchanged (`PROTOCOL.md`). Humans can play in the browser; LLM agents still use `python client.py --player LLM`.
+
+### Parity tests (Pygame ↔ web)
+
+See [`TESTS.md`](TESTS.md) for coverage, golden fixtures, and how to run Pytest + Vitest.
+
+```bash
+PYTHONPATH=. ./venv/bin/python tests/generate_parity_golden.py
+PYTHONPATH=. ./venv/bin/pytest -q
+cd web && npm test
+```
+
+### Web human client
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open http://localhost:5173 — identification screen, then the client connects to `ws://localhost:8000`. Keep `python server.py` running.
+
+A browser human and a Pygame human (`python client.py`) can share the same session.
+
+### Operator control panel
+
+The server also listens on **port 8001** (override with `ADMIN_PORT`). Set `ADMIN_TOKEN` or read the token printed at startup.
+
+```bash
+export ADMIN_TOKEN=...   # optional; generated if missing
+python server.py
+```
+
+Then open http://localhost:5173/admin.html (Vite, with `/api` proxied) or http://localhost:8001/admin.html after `npm run build` in `web/`.
+
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| GET | `/api/public/config` | no | Screen size, colors, game WS URL |
+| GET | `/api/admin/status` | Bearer | Live cycle, IoU, slots (names masked unless `?reveal=1`) |
+| GET | `/api/admin/config` | Bearer | Read-only `GAME_CONFIG` / settings |
+| POST | `/api/admin/shutdown` | Bearer | Same shutdown broadcast as Ctrl+C |
+| GET | `/api/admin/logs` | Bearer | Session folders under `LOGS/` |
+| GET | `/api/admin/logs/{id}/{file}` | Bearer | Download `game_events.jsonl`, `game_metadata.json`, or `game_players.jsonl` |
+
+Admin HTTP never shares the player WebSocket.
+
+---
+
 > **"Machines learning from humans. Humans learning from machines. Together, evolving and innovating."**
