@@ -136,3 +136,4 @@ screendata/
 venv
 .venv
 *.rrd
+web/node_modules/
