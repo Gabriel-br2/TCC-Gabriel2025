@@ -11,7 +11,6 @@ type Slot = {
   nature: string | null;
   name_masked: string | null;
   name: string | null;
-  guilt_hits: number;
 };
 
 type Status = {
@@ -83,7 +82,6 @@ async function startAdmin(): Promise<void> {
               <th>Natureza</th>
               <th>Conectado</th>
               <th>Nome</th>
-              <th>Overlaps</th>
             </tr>
           </thead>
           <tbody id="slots"></tbody>
@@ -206,7 +204,6 @@ function renderStatus(status: Status): void {
         <td>${slot.nature ?? "—"}</td>
         <td>${slot.connected ? "sim" : "não"}</td>
         <td>${escapeHtml(name)}</td>
-        <td>${slot.guilt_hits}</td>
       </tr>`;
     })
     .join("");

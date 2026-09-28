@@ -14,8 +14,6 @@ from game.shared.game_state import GameState
 from game.shared.objective import calculate_progress
 from game.shared.objective import calculate_union_area
 from game.shared.objective import reorganize_data
-from game.shared.objective import reorganize_data_map
-from game.shared.objective import player_individual_polygons
 from game.shared.protocol import CALC_INTERVAL_SEC
 from game.shared.protocol import OBJECTIVE_THRESHOLD
 from game.shared.protocol import player_key
@@ -46,8 +44,6 @@ class GameServer:
         self.objects: dict = {}
         self.goal_area = 0.0
         self.first_cycle = True
-        # per-player overlap (guilt) counters
-        self._guilt_hits: dict[int, int] = {i: 0 for i in range(self._settings.num_players)}
         self._shutting_down = False
         self._reset_hold_ticks = 0
 
@@ -146,51 +142,6 @@ class GameServer:
                             merged_pos.append(piece)
                     self.objects[player_key_name]["pos"] = merged_pos
                     self.objects[player_key_name]["mouse"] = update.get("mouse", (0, 0))
-                    # detect overlaps caused by this placement
-                    self._detect_and_record_overlaps(player_key_name, player_id)
-
-    def _detect_and_record_overlaps(self, player_key_name: str, player_id: int) -> None:
-        """Detect overlaps caused by the most recent placement from `player_key_name`,
-        update internal counters/state and log an event if overlaps occurred.
-        """
-        try:
-            player_polys = player_individual_polygons(
-                self.objects, self._model_vertices, player_key_name
-            )
-            others_map = reorganize_data_map(self.objects, self._model_vertices)
-            others_map.pop(player_key_name, None)
-            overlap_count = 0
-            overlapped_with = set()
-            for poly in player_polys:
-                for ok, other_poly in others_map.items():
-                    try:
-                        if poly.intersects(other_poly):
-                            overlap_count += 1
-                            overlapped_with.add(ok)
-                    except Exception:
-                        continue
-
-            if overlap_count > 0:
-                self._guilt_hits[player_id] = self._guilt_hits.get(player_id, 0) + overlap_count
-                try:
-                    self.objects[player_key_name]["overlaps"] = int(overlap_count)
-                    self.objects[player_key_name]["overlapped_with"] = list(overlapped_with)
-                except Exception:
-                    pass
-                try:
-                    self._logger.log_event(
-                        "overlap_event",
-                        {
-                            "player_id": player_id,
-                            "cycle_id": self.cycle_id,
-                            "overlap_count": overlap_count,
-                            "overlapped_with": list(overlapped_with),
-                        },
-                    )
-                except Exception:
-                    pass
-        except Exception:
-            pass
 
     async def calc_loop(self):
         if self._monitor_factory is not None:
@@ -207,14 +158,11 @@ class GameServer:
                 progress = self.objects.get("IoU", 0.0)
 
                 if not is_paused:
-                    player_polygons = reorganize_data_map(self.objects, self._model_vertices)
-                    polygons = list(player_polygons.values())
-                    union_area = calculate_union_area(polygons) if polygons else 0.0
+                    reorganized = reorganize_data(self.objects, self._model_vertices)
+                    union_area = calculate_union_area(reorganized)
                     progress = calculate_progress(
                         self._settings.num_players, self.goal_area, union_area
                     )
-
-                    # per-player marginal contribution computation removed; overlap events are used instead
                     self.objects["IoU"] = progress
 
                     if progress >= OBJECTIVE_THRESHOLD:
@@ -257,7 +205,6 @@ class GameServer:
                             "progress": progress,
                         },
                     )
-                    # per-player contributions removed; overlap_event used for attribution
                     if objective:
                         self._logger.log_event(
                             "Objective reached", {"cycle_id": self.cycle_id}
@@ -290,7 +237,6 @@ class GameServer:
                     "nature": info.get("nature"),
                     "name_masked": _mask_name(raw_name),
                     "name": raw_name if reveal_names else None,
-                    "guilt_hits": int(self._guilt_hits.get(player_id, 0)),
                 }
             )
 

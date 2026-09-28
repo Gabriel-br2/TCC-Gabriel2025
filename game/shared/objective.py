@@ -42,36 +42,6 @@ def reorganize_data(data, model_mappings):
     return objects
 
 
-def reorganize_data_map(data, model_mappings):
-    """Return a mapping player_key -> unified polygon for that player's objects."""
-    mapping: dict[str, Polygon] = {}
-    for key, value in data.items():
-        if key.startswith("P"):
-            polygons = [
-                Polygon(apply_transformation(*obj[:3], model_mappings[obj[3]]))
-                for obj in value["pos"]
-            ]
-            unified_polygon = unary_union(polygons)
-            mapping[key] = unified_polygon
-    return mapping
-
-
-def player_individual_polygons(data, model_mappings, pkey: str):
-    """Return a list of shapely Polygons for each object belonging to `pkey`."""
-    polygons = []
-    value = data.get(pkey)
-    if not value:
-        return polygons
-
-    for obj in value.get("pos", []):
-        try:
-            poly = Polygon(apply_transformation(*obj[:3], model_mappings[obj[3]]))
-            polygons.append(poly)
-        except Exception:
-            continue
-    return polygons
-
-
 def calculate_union_area(polygons):
     return unary_union(polygons).area
 
