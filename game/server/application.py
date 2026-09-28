@@ -40,6 +40,7 @@ class GameServer:
         self.cycle_id = 0
         self.clients: dict[Any, int] = {}
         self._pending_clients: dict[Any, int] = {}
+        self.player_info: dict[int, dict[str, Any]] = {}
         self.lock = asyncio.Lock()
         self.monitor: ServerMonitor | None = None
         self.objects: dict = {}
@@ -47,6 +48,8 @@ class GameServer:
         self.first_cycle = True
         # per-player overlap (guilt) counters
         self._guilt_hits: dict[int, int] = {i: 0 for i in range(self._settings.num_players)}
+        self._shutting_down = False
+        self._reset_hold_ticks = 0
 
         self._start_new_cycle()
 
@@ -98,6 +101,10 @@ class GameServer:
         async with self.lock:
             self._pending_clients.pop(websocket, None)
             self.clients[websocket] = player_id
+            self.player_info[player_id] = {
+                "nature": nature,
+                "name": name_id,
+            }
             initial_data = GameState(
                 objects=self.objects,
                 iou=self.objects.get("IoU", 0.0),
@@ -121,7 +128,23 @@ class GameServer:
             update_cycle_id = update.get("cycle_id")
             async with self.lock:
                 if update_cycle_id == self.cycle_id and player_key_name in self.objects:
-                    self.objects[player_key_name]["pos"] = update["pos"]
+                    incoming_pos = update.get("pos", [])
+                    current_pos = self.objects[player_key_name].get("pos", [])
+                    # Authority for shape types stays with the server/cycle.
+                    # Clients may only update pose (x, y, rz).
+                    merged_pos = []
+                    for index, piece in enumerate(incoming_pos):
+                        if (
+                            index < len(current_pos)
+                            and isinstance(piece, (list, tuple))
+                            and len(piece) >= 4
+                        ):
+                            merged_pos.append(
+                                [piece[0], piece[1], piece[2], current_pos[index][3]]
+                            )
+                        else:
+                            merged_pos.append(piece)
+                    self.objects[player_key_name]["pos"] = merged_pos
                     self.objects[player_key_name]["mouse"] = update.get("mouse", (0, 0))
                     # detect overlaps caused by this placement
                     self._detect_and_record_overlaps(player_key_name, player_id)
@@ -174,6 +197,8 @@ class GameServer:
             self.monitor = self._monitor_factory()
 
         while True:
+            if self._shutting_down:
+                break
             objective = False
             async with self.lock:
                 connected_players = len(self.clients)
@@ -199,6 +224,12 @@ class GameServer:
                         )
                         self._start_new_cycle()
                         reset_cycle = True
+                        # Hold reset:true across several ticks so late/background
+                        # clients still observe the rebuild signal.
+                        self._reset_hold_ticks = 60
+                    elif self._reset_hold_ticks > 0:
+                        reset_cycle = True
+                        self._reset_hold_ticks -= 1
 
                 game_state = GameState(
                     objects=self.objects,
@@ -239,14 +270,111 @@ class GameServer:
             await asyncio.sleep(0.25 if self.first_cycle else CALC_INTERVAL_SEC)  
             self.first_cycle = False 
 
+    def snapshot(self, *, reveal_names: bool = False) -> dict[str, Any]:
+        """Operator-facing session snapshot. Safe to call only while holding `lock`."""
+        occupied = set(self.clients.values())
+        slots = []
+        for player_id in range(self._settings.num_players):
+            info = self.player_info.get(player_id, {})
+            raw_name = info.get("name")
+            color = (
+                self._settings.player_colors[player_id]
+                if player_id < len(self._settings.player_colors)
+                else None
+            )
+            slots.append(
+                {
+                    "id": player_id,
+                    "color": color,
+                    "connected": player_id in occupied,
+                    "nature": info.get("nature"),
+                    "name_masked": _mask_name(raw_name),
+                    "name": raw_name if reveal_names else None,
+                    "guilt_hits": int(self._guilt_hits.get(player_id, 0)),
+                }
+            )
+
+        objects_view = _snapshot_objects_for_admin(self.objects)
+        return {
+            "cycle_id": self.cycle_id,
+            "iou": float(self.objects.get("IoU", 0.0) or 0.0),
+            "is_paused": len(self.clients) < self._settings.num_players,
+            "connected_players": len(self.clients),
+            "total_players": self._settings.num_players,
+            "goal_area": self.goal_area,
+            "slots": slots,
+            "objects": objects_view,
+        }
+
+    async def get_snapshot(self, *, reveal_names: bool = False) -> dict[str, Any]:
+        async with self.lock:
+            return self.snapshot(reveal_names=reveal_names)
+
+    def public_client_config(self, request_host: str) -> dict[str, Any]:
+        from game.shared.config import COLOR_CONFIG
+
+        hostname = request_host.split(":")[0]
+        connect_host = self._settings.server_connect_host
+        if "ngrok" in hostname.lower() or (
+            "ngrok" in connect_host.lower() and hostname not in {"localhost", "127.0.0.1", "::1"}
+            and not hostname.startswith("192.168.")
+            and not hostname.startswith("10.")
+        ):
+            ws_url = f"wss://{connect_host}"
+        else:
+            ws_url = f"ws://{hostname}:{self._settings.server_port}"
+        return {
+            "screen": {
+                "caption": self._settings.screen_caption,
+                "width": self._settings.screen_width,
+                "height": self._settings.screen_height,
+            },
+            "game": {
+                "playerNum": self._settings.num_players,
+                "objectsNum": self._settings.num_objects,
+                "objectBaseSquareTam": self._settings.object_base_square_size,
+                "transparency": self._settings.transparency,
+            },
+            "ws": {"url": ws_url, "port": self._settings.server_port},
+            "player_colors": list(self._settings.player_colors),
+            "colors": COLOR_CONFIG,
+        }
+
+    def operator_config(self) -> dict[str, Any]:
+        from game.shared.config import COLOR_CONFIG
+        from game.shared.config import GAME_CONFIG
+
+        return {
+            "settings": {
+                "screen_width": self._settings.screen_width,
+                "screen_height": self._settings.screen_height,
+                "screen_caption": self._settings.screen_caption,
+                "num_players": self._settings.num_players,
+                "num_objects": self._settings.num_objects,
+                "object_base_square_size": self._settings.object_base_square_size,
+                "transparency": self._settings.transparency,
+                "server_bind_host": self._settings.server_bind_host,
+                "server_connect_host": self._settings.server_connect_host,
+                "server_port": self._settings.server_port,
+                "show_monitor": self._settings.show_monitor,
+                "player_colors": list(self._settings.player_colors),
+            },
+            "game_config": GAME_CONFIG,
+            "color_config": COLOR_CONFIG,
+            "log_timestamp": self._logger.timestamp,
+        }
+
     async def shutdown(self) -> None:
+        if self._shutting_down:
+            return
+        self._shutting_down = True
+
         if self.monitor is not None:
             self.monitor.close()
 
-
         async with self.lock:
             client_list_copy = list(self.clients.keys())
- 
+
         if client_list_copy:
             shutdown_msg = json.dumps({"type": "shutdown"})
             websockets.broadcast(client_list_copy, shutdown_msg)
@@ -256,12 +384,18 @@ class GameServer:
                 return_exceptions=True,
             )
             logging.info(f"Shutdown sent to {len(client_list_copy)} client(s).")
- 
-        self._logger.process_data()
+
+        try:
+            self._logger.process_data()
+        except Exception:
+            logging.exception("Failed to process session plots during shutdown")
 
     async def run(self):
+        from game.server.admin import start_admin_site
+
+        admin_runner = None
         try:
-            
+            admin_runner = await start_admin_site(self)
             async with websockets.serve(
                 self.handler,
                 self._settings.server_bind_host,
@@ -278,3 +412,34 @@ class GameServer:
                 )
             else:
                 logging.error(f"Server encountered an OSError: {error}")
+        finally:
+            await self.shutdown()
+            if admin_runner is not None:
+                await admin_runner.cleanup()
+
+
+def _mask_name(name: str | None) -> str | None:
+    if not name:
+        return None
+    parts = [part for part in str(name).split() if part]
+    if not parts:
+        return None
+    return " ".join(f"{part[0]}." for part in parts)
+
+
+def _snapshot_objects_for_admin(objects: dict) -> dict:
+    snapshot: dict[str, Any] = {}
+    for key, value in objects.items():
+        if key in ("IoU", "cycle_id"):
+            snapshot[key] = value
+            continue
+        if not isinstance(value, dict):
+            continue
+        mouse = value.get("mouse")
+        snapshot[key] = {
+            "id": value.get("id"),
+            "color": value.get("color"),
+            "pos": [list(obj) for obj in value.get("pos", [])],
+            "mouse": list(mouse) if mouse is not None else None,
+        }
+    return snapshot

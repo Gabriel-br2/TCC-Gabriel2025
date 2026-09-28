@@ -11,7 +11,6 @@ def main() -> None:
         asyncio.run(server.run())
     except KeyboardInterrupt:
         logging.info("Server shutting down.")
-        server.shutdown()
 
 
 if __name__ == "__main__":
