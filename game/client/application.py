@@ -86,7 +86,19 @@ class ClientApplication:
 
     def _apply_server_update(self, update: dict) -> GameState:
         server_objects = update.get("objects", {})
-        is_reset = update.get("reset", False)
+        incoming_cycle = server_objects.get("cycle_id")
+        previous_cycle = (
+            self._game_state.cycle_id if self._game_state is not None else None
+        )
+        cycle_advanced = (
+            incoming_cycle is not None
+            and previous_cycle is not None
+            and incoming_cycle != previous_cycle
+        )
+        is_reset = update.get("reset", False) or cycle_advanced
+        # Re-broadcasts of reset:true for the same cycle must not rebuild/block again.
+        if update.get("reset", False) and not cycle_advanced and previous_cycle is not None:
+            is_reset = False
 
         if is_reset:
             print(
@@ -96,7 +108,9 @@ class ClientApplication:
             shapes = self._object_factory.from_server_payload(
                 server_objects, self._client_id
             )
-            self._screen.change_screen()
+            # Only block on the transition screen when the cycle id actually changes.
+            if cycle_advanced:
+                self._screen.change_screen()
         else:
             shapes = self._game_state.objects
             for shape in shapes:

@@ -37,6 +37,7 @@ class GameClient:
 
         self._state_lock = threading.Lock()
         self._latest_state: dict = {}
+        self._pending_reset = False
 
     def _run_loop(self):
         asyncio.set_event_loop(self._loop)
@@ -111,6 +112,8 @@ class GameClient:
                     continue
 
                 with self._state_lock:
+                    if update.get("reset"):
+                        self._pending_reset = True
                     self._latest_state = update
         except ConnectionClosed:
             print("Servidor fechou a conexão.")
@@ -124,6 +127,9 @@ class GameClient:
             if self._latest_state:
                 state = self._latest_state
                 self._latest_state = {}
+                if self._pending_reset:
+                    self._pending_reset = False
+                    state = {**state, "reset": True}
                 return state
         return None
 
